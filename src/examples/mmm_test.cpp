@@ -1,6 +1,6 @@
-#include "examples/mmm.hpp"
+#include "hls_recurse/examples/mmm.hpp"
 
-#include "utility.hpp"
+#include "hls_recurse/utility.hpp"
 
 #include <stdlib.h>
 

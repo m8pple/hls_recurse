@@ -3,9 +3,9 @@
 
 
 
-#include "state_machine_self_recusion.hpp"
+#include "hls_recurse/state_machine_self_recusion.hpp"
 
-#include "var.hpp"
+#include "hls_recurse/var.hpp"
 
 namespace hls_recurse
 {

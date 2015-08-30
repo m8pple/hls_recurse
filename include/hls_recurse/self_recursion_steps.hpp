@@ -6,13 +6,13 @@
     and provides the basic recursion steps.
    */
 
-#include "state_machine_steps.hpp"
-#include "state_machine_builder.hpp"
+#include "hls_recurse/state_machine_steps.hpp"
+#include "hls_recurse/state_machine_builder.hpp"
 
 #include <stdio.h>
 #include <iostream>
 
-#include "hls_tuple.hpp"
+#include "hls_recurse/hls_tuple.hpp"
 
 namespace hls_recurse{
 

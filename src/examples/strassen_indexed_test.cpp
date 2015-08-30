@@ -1,4 +1,4 @@
-#include "examples/strassen_indexed.hpp"
+#include "hls_recurse/examples/strassen_indexed.hpp"
 
 #include <stdlib.h>
 

@@ -1,9 +1,9 @@
 #ifndef fft_hpp
 #define fft_hpp
 
-#include "state_machine_self_recursion.hpp"
+#include "hls_recurse/state_machine_self_recursion.hpp"
 
-#include "complex.hpp"
+#include "hls_recurse/complex.hpp"
 
 namespace hls_recurse
 {

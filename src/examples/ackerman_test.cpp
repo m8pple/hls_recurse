@@ -1,4 +1,4 @@
-#include "examples/ackerman.hpp"
+#include "hls_recurse/examples/ackerman.hpp"
 
 #include <stdlib.h>
 

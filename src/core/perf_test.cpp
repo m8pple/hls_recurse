@@ -1,11 +1,11 @@
-#include "state_machine_builder.hpp"
+#include "hls_recurse/state_machine_builder.hpp"
 
-#include "state_machine_perf/while_perf.hpp"
-#include "state_machine_perf/if_else_perf.hpp"
-#include "state_machine_perf/sequence_perf.hpp"
-#include "state_machine_perf/for_perf.hpp"
+#include "hls_recurse/state_machine_perf/while_perf.hpp"
+#include "hls_recurse/state_machine_perf/if_else_perf.hpp"
+#include "hls_recurse/state_machine_perf/sequence_perf.hpp"
+#include "hls_recurse/state_machine_perf/for_perf.hpp"
 
-#include "utility.hpp"
+#include "hls_recurse/utility.hpp"
 
 using namespace hls_recurse;
 

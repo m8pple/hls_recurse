@@ -1,7 +1,7 @@
 #ifndef sum_hpp
 #define sum_hpp
 
-#include "state_machine_self_recursion.hpp"
+#include "hls_recurse/state_machine_self_recursion.hpp"
 #include <stdint.h>
 
 namespace hls_recurse

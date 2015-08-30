@@ -1,4 +1,4 @@
-#include "examples/sum_indexed.hpp"
+#include "hls_recurse/examples/sum_indexed.hpp"
 
 #include <stdlib.h>
 

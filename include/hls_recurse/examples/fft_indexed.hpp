@@ -1,7 +1,7 @@
 #ifndef fft_indexed_hpp
 #define fft_indexed_hpp
 
-#include "state_machine_self_recursion.hpp"
+#include "hls_recurse/state_machine_self_recursion.hpp"
 
 #include "complex.hpp"
 

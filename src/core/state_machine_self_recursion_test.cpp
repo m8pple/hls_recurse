@@ -1,4 +1,4 @@
-#include "state_machine_self_recursion.hpp"
+#include "hls_recurse/state_machine_self_recursion.hpp"
 
 #include <cstdio>
 #include <vector>
@@ -6,7 +6,7 @@
 #include <complex>
 #include <iostream>
 
-#include "utility.hpp"
+#include "hls_recurse/utility.hpp"
 
 using namespace hls_recurse;
 

@@ -1,6 +1,6 @@
-#include "examples/miser_indexed.hpp"
+#include "hls_recurse/examples/miser_indexed.hpp"
 
-#include "utility.hpp"
+#include "hls_recurse/utility.hpp"
 
 #include <stdlib.h>
 

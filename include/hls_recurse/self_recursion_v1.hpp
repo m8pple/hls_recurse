@@ -1,7 +1,7 @@
 #ifndef state_machine_self_recursion_v1_hpp
 #define state_machine_self_recursion_v1_hpp
 
-#include "self_recursion_steps.hpp"
+#include "hls_recurse/self_recursion_steps.hpp"
 
 namespace hls_recurse
 {

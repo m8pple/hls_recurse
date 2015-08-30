@@ -2,7 +2,7 @@
 #define state_machine_builder_hpp
 
 
-#include "state_machine_steps.hpp"
+#include "hls_recurse/state_machine_steps.hpp"
 
 namespace hls_recurse{
 

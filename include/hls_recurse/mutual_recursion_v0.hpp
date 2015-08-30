@@ -1,7 +1,7 @@
 #ifndef mutual_recursion_v0_hpp
 #define mutual_recursion_v0_hpp
 
-#include "self_recursion_steps.hpp"
+#include "hls_recurse/self_recursion_steps.hpp"
 
 namespace v0
 {

@@ -1,7 +1,7 @@
 #ifndef strassen_hpp
 #define strassen_hpp
 
-#include "state_machine_self_recursion.hpp"
+#include "hls_recurse/state_machine_self_recursion.hpp"
 
 namespace hls_recurse
 {
