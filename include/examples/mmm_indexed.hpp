@@ -3,6 +3,9 @@
 
 #include "state_machine_self_recursion.hpp"
 
+namespace hls_recurse
+{
+
 // No implementation, as we can't deal with the pointe problem
 void f_mmm_indexed(int n, int stride, float *dst, const float *a, const float *b);
 
@@ -83,5 +86,7 @@ bool test_mmm_indexed(T mmm_indexed)
 
     return true;
 }
+
+}; // hls_recurse
 
 #endif

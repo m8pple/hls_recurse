@@ -1,5 +1,7 @@
 #include "var_extensions.hpp"
 
+using namespace hls_recurse;
+
 /*
 uint32_t func(uint32_t _n)
 {

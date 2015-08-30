@@ -3,6 +3,9 @@
 
 #include "state_machine_self_recursion.hpp"
 
+namespace hls_recurse
+{
+
 void r_mmm(int n, int stride, float *dst, const float *a, const float *b)
 {
     auto sub = [&](int v,int h) -> int
@@ -161,5 +164,7 @@ bool test_mmm(T mmm)
 
     return true;
 }
+
+}; // hls_recurse
 
 #endif

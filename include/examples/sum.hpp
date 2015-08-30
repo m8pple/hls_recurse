@@ -4,6 +4,9 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
+
 class SumV1
     : public Function<SumV1, void, uint32_t,float*>
 {
@@ -73,5 +76,7 @@ bool test_sum(T sum)
 
     return x[0]==n*(n-1)/2;
 }
+
+}; // hls_recurse
 
 #endif

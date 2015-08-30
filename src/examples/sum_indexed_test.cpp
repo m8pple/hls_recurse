@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+using namespace hls_recurse;
+
 int main()
 {
     if(!test_sum_indexed(r_sum_indexed)){

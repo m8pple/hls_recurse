@@ -4,6 +4,8 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
 
 uint32_t r_ackerman(uint32_t m, uint32_t n)
 {
@@ -128,5 +130,7 @@ bool test_ackerman(T ackerman)
 
     return failed==0;
 }
+
+}; // hls_recurse
 
 #endif

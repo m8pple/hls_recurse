@@ -5,6 +5,8 @@
 
 #include "complex.hpp"
 
+namespace hls_recurse
+{
 
 // Does not exist
 void f_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut);
@@ -104,5 +106,7 @@ bool test_fft_indexed(T fft_indexed)
 
     return true;
 }
+
+}; // hls_recurse
 
 #endif

@@ -4,6 +4,9 @@
 #include <string>
 #include <string.h>
 
+namespace hls_recurse
+{
+
 template<class TImpl,class T>
 class VarExpr
 {
@@ -207,5 +210,7 @@ VarLessThanEqual<A,Const<B>> operator<=(const VarExpr<A,typename A::type> &a, co
 {
     return VarLessThanEqual<A,Const<B>>((const A&)a,Val(b));
 }
+
+}; // hls_recurse
 
 #endif

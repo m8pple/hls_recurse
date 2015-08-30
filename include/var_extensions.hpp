@@ -7,6 +7,9 @@
 
 #include "var.hpp"
 
+namespace hls_recurse
+{
+
 template<class ...TVars>
 struct var_list_to_tuple;
 
@@ -61,5 +64,6 @@ template<class TRetDst, class ...T>
 HLS_INLINE_STEP RecurseWithResultStep<TRetDst, var_list_to_tuple<T...>> RecurseWithResult(TRetDst &dst, const T &...src)
 { return RecurseWithResultStep<TRetDst,var_list_to_tuple<T...>>(dst, var_list_to_tuple<T...>(src...)); }
 
+}; // hls_recurse
 
 #endif

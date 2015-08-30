@@ -4,6 +4,9 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
+
 void r_sort(float *a, int n)
 {
     int split=0;
@@ -202,5 +205,7 @@ bool test_sort(T sort)
 
     return true;
 }
+
+}; // hls_recurse
 
 #endif

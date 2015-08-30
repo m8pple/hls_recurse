@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+using namespace hls_recurse;
+
 int main()
 {
     if(!test_strassen(r_strassen)){

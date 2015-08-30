@@ -12,6 +12,9 @@
 
 #include "miser.hpp"
 
+namespace hls_recurse
+{
+
 template<class T>
 class RegionAllocatorI
 {
@@ -363,6 +366,8 @@ bool test_miser_indexed(T miser_indexed)
     
     return ((0.0780804-0.001) < res.first) && ( res.first < (0.0780804+0.001));
 }
+
+}; // hls_recurse
 
 #endif
 

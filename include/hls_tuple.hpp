@@ -1,18 +1,10 @@
 #ifndef hls_tuple_hpp
 #define hls_tuple_hpp
 
-
 #include <iostream>
 
-/*
-    This file should not exist. It works fine with std::tuple for
-    both values and references, but the frontends are too far
-    downlevel to include tuple.
-    UPDATE: now both front-ends can deal with tuple, but this is
-    a legacy thing. It still allows certain things like assigning
-    from a lower to higher arity tuple.
-
-*/
+namespace hls_recurse
+{
 
 struct hls_make_tag {};
 
@@ -22,6 +14,28 @@ struct hls_state_tuple;
 template<class ...TParts>
 struct hls_binding_tuple;
 
+    
+namespace detail
+{
+        
+    template<class T>
+    struct is_state_tuple
+    { static const int value = 0; };
+
+    template<class ...T>
+    struct is_state_tuple<hls_state_tuple<T...>>
+    { static const int value = 1; };    
+
+
+    template<class T>
+    struct is_binding_tuple
+    { static const int value = 0; };
+
+    template<class ...T>
+    struct is_binding_tuple<hls_binding_tuple<T...>>
+    { static const int value = 1; };    
+};        
+    
 
 template<>
 struct hls_state_tuple<>
@@ -39,9 +53,14 @@ public:
     }
 };
 
+
 template<class TFirst, class ...TRest>
 struct hls_state_tuple<TFirst,TRest...>
 {
+    static_assert(!detail::is_state_tuple<TFirst>::value, "A state tuple cannot contain another state tuple.");
+    static_assert(!detail::is_binding_tuple<TFirst>::value, "A state tuple cannot contain a binding tuple.");
+    static_assert(!std::is_reference<TFirst>::value, "A state tuple cannot contain a reference.");
+    
 public:
     TFirst first;
     hls_state_tuple<TRest...> rest;
@@ -53,26 +72,36 @@ public:
         : first() // Default construct
         , rest()  // Default construct
     {}
+    
+    // Exact copy construction
+    HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<TFirst,TRest...> &x)
+        : first(x.first)
+        , rest(x.rest)
+    {}
 
+        
+    //! Used for exact construction by make_hls_state_tuple
+    HLS_INLINE_STEP hls_state_tuple(hls_make_tag, const TFirst &_first, const hls_state_tuple<TRest...> &_rest)
+        : first(_first)
+        , rest(_rest)
+    {}
+        
+    //! Create a tuple from a parameter pack
     HLS_INLINE_STEP hls_state_tuple(const TFirst &_first, const TRest &..._rest)
         : first(_first)
         , rest(_rest...)
     {}
         
+    
+    
+        
+    //! Create a tuple from head and tail, then default all the remaining parameters
     HLS_INLINE_STEP hls_state_tuple(const TFirst &_first, const hls_state_tuple<> &_rest)
         : first(_first)
         , rest(_rest)
     {}
 
-    HLS_INLINE_STEP hls_state_tuple(hls_make_tag, const TFirst &_first, const hls_state_tuple<TRest...> &_rest)
-        : first(_first)
-        , rest(_rest)
-    {}
-
-    HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<TFirst,TRest...> &x)
-        : first(x.first)
-        , rest(x.rest)
-    {}
+    
         
     // Allow for slight mismatches, as long as they are copy constructible
     template<class TFirstAlt, class TRestHead, class ...TRestAlt>
@@ -145,60 +174,55 @@ HLS_INLINE_STEP hls_state_tuple<> make_hls_state_tuple<>()
     return hls_state_tuple<>();
 }
 
-template<class TFirst,class TSecond>
-struct hls_state_tuple_cat_type;
-
-template<class TFirst,class ...TSecondParts>
-struct hls_state_tuple_cat_type<TFirst,hls_state_tuple<TSecondParts...> >
+namespace detail
 {
-    typedef hls_state_tuple<TFirst,TSecondParts...> type;
-};
 
+    template<unsigned i,class TFirst, class ...TRest>
+    class getter
+    {
+    public:
+      typedef typename getter<i-1,TRest...>::result_t result_t;
 
-template<unsigned i,class TFirst, class ...TRest>
-class getter
-{
-public:
-  typedef typename getter<i-1,TRest...>::result_t result_t;
+      static const result_t &get(const hls_state_tuple<TFirst,TRest...> &args)
+      {
+        return getter<i-1,TRest...>::get(args.rest);
+      }
 
-  static const result_t &get(const hls_state_tuple<TFirst,TRest...> &args)
-  {
-    return getter<i-1,TRest...>::get(args.rest);
-  }
+      static result_t &get(hls_state_tuple<TFirst,TRest...> &args)
+      {
+        return getter<i-1,TRest...>::get(args.rest);
+      }
+    };
 
-  static result_t &get(hls_state_tuple<TFirst,TRest...> &args)
-  {
-    return getter<i-1,TRest...>::get(args.rest);
-  }
-};
+    template<class TFirst, class ...TRest>
+    class getter<0,TFirst,TRest...>
+    {
+    public:
+      typedef TFirst result_t;
 
-template<class TFirst, class ...TRest>
-class getter<0,TFirst,TRest...>
-{
-public:
-  typedef TFirst result_t;
+      static const result_t &get(const hls_state_tuple<TFirst,TRest...> &args)
+      {
+        return args.first;
+      }
 
-  static const result_t &get(const hls_state_tuple<TFirst,TRest...> &args)
-  {
-    return args.first;
-  }
+      static result_t &get(hls_state_tuple<TFirst,TRest...> &args)
+      {
+        return args.first;
+      }
+    };
 
-  static result_t &get(hls_state_tuple<TFirst,TRest...> &args)
-  {
-    return args.first;
-  }
 };
 
 template<unsigned i,class ...TArgs>
-const typename getter<i,TArgs...>::result_t &get(const hls_state_tuple<TArgs...> &args)
+const typename detail::getter<i,TArgs...>::result_t &get(const hls_state_tuple<TArgs...> &args)
 {
-  return getter<i,TArgs...>::get(args);
+  return detail::getter<i,TArgs...>::get(args);
 }
 
 template<unsigned i,class ...TArgs>
-typename getter<i,TArgs...>::result_t &get(hls_state_tuple<TArgs...> &args)
+typename detail::getter<i,TArgs...>::result_t &get(hls_state_tuple<TArgs...> &args)
 {
-  return getter<i,TArgs...>::get(args);
+  return detail::getter<i,TArgs...>::get(args);
 }
 
 
@@ -305,5 +329,7 @@ HLS_INLINE_STEP hls_binding_tuple<> make_hls_binding_tuple()
 {
     return hls_binding_tuple<>();
 }
+
+}; // HLSrec
 
 #endif

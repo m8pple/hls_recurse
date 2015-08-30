@@ -2,6 +2,8 @@
 
 #include <cstdio>
 
+using namespace hls_recurse;
+
 struct {} ctxt;
 
 void test1()

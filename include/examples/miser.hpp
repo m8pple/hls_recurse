@@ -10,6 +10,9 @@
 
 #include "state_machine_self_recursion.hpp"
 
+namespace hls_recurse
+{
+
 class XorShift128
 {
     uint32_t x, y, z, w;
@@ -391,6 +394,8 @@ bool test_miser(T miser)
     
     return ((0.0780804-0.001) < res.first) && ( res.first < (0.0780804+0.001));
 }
+
+}; // hls_recurse
 
 #endif
 

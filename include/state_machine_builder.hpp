@@ -4,6 +4,7 @@
 
 #include "state_machine_steps.hpp"
 
+namespace hls_recurse{
 
 namespace detail
 {
@@ -258,6 +259,6 @@ HLS_INLINE_STEP typename detail::LiftFor<TInitFunc,TCondFunc,TStepFunc,TBodyStep
     return detail::LiftFor<TInitFunc,TCondFunc,TStepFunc,TBodySteps...>::lift(init,cond,step,body...);
 }   
 
-
+}; // hls_recurse
 
 #endif

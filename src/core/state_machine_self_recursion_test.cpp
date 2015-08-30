@@ -8,13 +8,15 @@
 
 #include "utility.hpp"
 
+using namespace hls_recurse;
+
 void test1()
 {
     uint32_t s1=10;
 
     generic_context_t<hls_state_tuple<uint32_t> > storage[16];
 
-    CallStack<void,uint32_t> stack(storage, s1);
+    v0::CallStack<void,uint32_t> stack(storage, s1);
 
     stack.PushContext(100);
     s1=5;
@@ -33,7 +35,7 @@ void test2()
     float s2=100.0;
 
     generic_context_t<hls_state_tuple<uint32_t,float> > storage[16];
-    CallStack<void,uint32_t,float> stack(storage, s1,s2);
+    v0::CallStack<void,uint32_t,float> stack(storage, s1,s2);
 
     stack.PushContext(100);
     s1=5;
@@ -56,7 +58,7 @@ void test3()
     float s2=100.0;
 
     generic_context_t<hls_state_tuple<uint32_t,float> > storage[16];
-    CallStack<void,uint32_t,float> stack(storage,s1,s2);
+    v0::CallStack<void,uint32_t,float> stack(storage,s1,s2);
 
     auto x1=[](){
         return make_hls_state_tuple(uint32_t(5), float(50.0));

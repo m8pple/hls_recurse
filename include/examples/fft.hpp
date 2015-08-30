@@ -5,6 +5,9 @@
 
 #include "complex.hpp"
 
+namespace hls_recurse
+{
+
 void r_fft_aux(int n, complex_t wn, const complex_t *pIn, int sIn, complex_t *pOut, int sOut)
 {
     if( n<=2 ){
@@ -244,5 +247,7 @@ bool test_fft(T fft)
 
     return true;
 }
+
+}; // hls_recurse
 
 #endif

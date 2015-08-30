@@ -7,6 +7,8 @@
 
 #include "utility.hpp"
 
+using namespace hls_recurse;
+
 int main()
 {
     uint64_t a,b;

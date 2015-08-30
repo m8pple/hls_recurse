@@ -3,6 +3,9 @@
 
 #include "state_machine_self_recursion.hpp"
 
+namespace hls_recurse
+{
+
 struct imatrix_t
 {
     int n;
@@ -302,5 +305,7 @@ bool test_strassen_indexed(TImpl strassen_indexed)
     }
     return ok;
 }
+
+}; // hls_recurse
 
 #endif

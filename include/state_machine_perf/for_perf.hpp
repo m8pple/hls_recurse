@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+namespace hls_recurse
+{
+
 
 uint32_t for_perf_native(uint32_t x)
 {
@@ -39,5 +42,7 @@ bool test_for_perf(T for_perf)
     printf("n=%u, res=%u\n", n, res);
     return res==2098296;
 }
+
+}; // hls_recurse
 
 #endif

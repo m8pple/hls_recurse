@@ -3,6 +3,9 @@
 
 #include <time.h>
 
+namespace hls_recurse
+{
+
 uint64_t time_now()
 {
     struct timespec tp;
@@ -16,5 +19,7 @@ double time_delta(uint64_t begin, uint64_t end)
     
     return diff*1e-9;
 }
+
+}; // hls_recurse
 
 #endif

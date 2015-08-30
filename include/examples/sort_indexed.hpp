@@ -4,6 +4,9 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
+
 void f_sort_indexed(float *a, int n);
 
 void f2_sort_indexed(float *a, int n)
@@ -80,5 +83,7 @@ bool test_sort_indexed(T sort)
 
     return true;
 }
+
+}; // hls_recurse
 
 #endif

@@ -4,6 +4,9 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
+
 uint32_t r_fib(uint32_t n)
 {
     if(n<=2){
@@ -85,5 +88,7 @@ bool test_fib(T fib)
 
     return failed==0;
 }
+
+}; // hls_recurse
 
 #endif

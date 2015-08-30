@@ -10,6 +10,8 @@
 #define HLS_INLINE_STEP inline 
 #endif
 
+namespace hls_recurse
+{
 
 /* There is no particular reason for this number, it just reflects
     my assumptions. It is also useful to make sure that things
@@ -458,5 +460,7 @@ void run_state_machine(
     }
     assert(next==body.total_state_count);
 }
+
+}; // hls_recurse
 
 #endif

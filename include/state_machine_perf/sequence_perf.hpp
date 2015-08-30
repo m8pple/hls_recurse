@@ -4,6 +4,9 @@
 // Get step
 #include "while_perf.hpp"
 
+namespace hls_recurse
+{
+
 uint32_t sequence_perf_native(uint32_t x)
 {
     uint32_t i=0xCCCCCCCCul;
@@ -53,5 +56,7 @@ bool test_sequence_perf(T sequence_perf)
     printf("n=%u, res=%u\n", n, res);
     return res==4060911068;
 }
+
+}; // hls_recurse
 
 #endif

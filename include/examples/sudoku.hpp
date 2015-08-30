@@ -4,6 +4,9 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
+
 // This code is adapted from MITCHELL JOHNSON
 // June 18, 2012
 // http://spin.atomicobject.com/2012/06/18/solving-sudoku-in-c-with-recursive-backtracking/
@@ -213,5 +216,7 @@ bool test_sudoku(T sudoku)
     }
     return success;
 }
+
+}; // hls_recurse
 
 #endif

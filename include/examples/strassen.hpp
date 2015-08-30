@@ -3,6 +3,9 @@
 
 #include "state_machine_self_recursion.hpp"
 
+namespace hls_recurse
+{
+
 struct matrix_t
 {
     int n;
@@ -396,5 +399,7 @@ bool test_strassen(TImpl strassen)
     }
     return ok;
 }
+
+}; // hls_recurse
 
 #endif

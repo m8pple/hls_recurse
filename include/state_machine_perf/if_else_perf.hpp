@@ -4,6 +4,9 @@
 // Get step
 #include "while_perf.hpp"
 
+namespace hls_recurse
+{
+
 uint32_t if_else_perf_native(uint32_t x)
 {
     uint32_t i=0;
@@ -43,5 +46,7 @@ bool test_if_else_perf(T while_perf)
     printf("n=%u, res=%u\n", n, res);
     return res==17987606;
 }
+
+}; // hls_recurse
 
 #endif

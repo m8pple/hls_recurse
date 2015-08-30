@@ -4,6 +4,9 @@
 #include "state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+namespace hls_recurse
+{
+
 void r_sum_indexed(uint32_t n, float *array)
 {
 	#pragma HLS INTERFACE m_axi depth=1024 port=array
@@ -35,7 +38,7 @@ void f_sum_indexed(uint32_t _n, float *array)
 		)
 	);
 
-	typedef CallStack<void, uint32_t, int> call_stack_t;
+	typedef v0::CallStack<void, uint32_t, int> call_stack_t;
 
 	call_stack_t::stack_entry_t stack[64];
 
@@ -109,5 +112,7 @@ bool test_sum_indexed(T sum_indexed)
 
     return x[0]==n*(n-1)/2;
 }
+
+}; // namespace hls_recurse
 
 #endif
