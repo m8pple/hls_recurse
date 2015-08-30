@@ -1,0 +1,10 @@
+cmake_minimum_required (VERSION 3.2)
+
+add_executable_test(examples ackerman)
+add_executable_test(examples fft)
+add_executable_test(examples mmm)
+add_executable_test(examples miser)
+add_executable_test(examples miser_indexed)
+add_executable_test(examples strassen)
+add_executable_test(examples strassen_indexed)
+add_executable_test(examples sum_indexed)
