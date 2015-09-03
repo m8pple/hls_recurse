@@ -1,14 +1,7 @@
 #ifndef state_machine_steps_hpp
 #define state_machine_steps_hpp
 
-
-#include <assert.h>
-
-#ifdef __GNUC__
-#define HLS_INLINE_STEP inline __attribute__((always_inline))
-#else
-#define HLS_INLINE_STEP inline 
-#endif
+#include "hls_recurse/utility.hpp"
 
 namespace hls_recurse
 {
@@ -17,7 +10,27 @@ namespace hls_recurse
     my assumptions. It is also useful to make sure that things
     don't overflow if my increasingly poor decision to pack
     bit-fields into states continues unabated. */
-const unsigned max_total_state_count = 255;
+const unsigned max_total_state_count = 1024;
+    
+
+/* These are special codes which should be propagated back 
+    without inner->outer adjustment.
+*/
+enum{
+    //! A return statement has executed, and propagates back to the function level (outer manager)
+    StateCode_Return         = 0x1000,
+    
+    //! A break statemetn has executed, and propagates out to the enclosing loop.
+    /*! I guess if it hits the outer part then its a run-time error, though it should be compile-time. */
+    StateCode_Break          = 0x2000,
+    
+    // Something has gone wrong at run-time. This should never actually happen
+    // if the compile-time stuff works correctly
+    StateCode_RunTimeError          = 0x4000,
+    
+    StateCode_SpecialMask    = StateCode_Return | StateCode_Break | StateCode_RunTimeError
+};
+
 
 enum traits_t{
     // If this trait is true, then this is the end of a sequence, so following
@@ -33,19 +46,6 @@ enum traits_t{
     InheritedTrait_WithinLoop = 0x4
 };
 
-/* These are special codes which should be propagated back 
-    without inner->outer adjustment.
-*/
-enum{
-    //! A return statement has executed, and propagates back to the function level (outer manager)
-    StateCode_Return         = 0x10000,
-    
-    //! A break statemetn has executed, and propagates out to the enclosing loop.
-    /*! I guess if it hits the outer part then its a run-time error, though it should be compile-time. */
-    StateCode_Break          = 0x20000,
-    
-    StateCode_SpecialMask    = StateCode_Return | StateCode_Break
-};
 
 
 #if 0

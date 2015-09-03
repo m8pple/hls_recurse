@@ -1,6 +1,8 @@
 #ifndef hls_tuple_hpp
 #define hls_tuple_hpp
 
+#include "hls_recurse/utility.hpp"
+
 #include <iostream>
 
 namespace hls_recurse
@@ -310,6 +312,10 @@ struct hls_binding_tuple_cat_type<TFirst,hls_binding_tuple<TSecondParts...> >
 };
 
 
+HLS_INLINE_STEP hls_binding_tuple<> make_hls_binding_tuple()
+{
+    return hls_binding_tuple<>();
+}
 
 
 template<class TFirst, class ...TRest>
@@ -325,10 +331,6 @@ HLS_INLINE_STEP hls_binding_tuple<TFirst,TRest...> make_hls_binding_tuple(TFirst
     return hls_binding_tuple<TFirst,TRest...>(first, _rest);
 }
 
-HLS_INLINE_STEP hls_binding_tuple<> make_hls_binding_tuple()
-{
-    return hls_binding_tuple<>();
-}
 
 }; // HLSrec
 

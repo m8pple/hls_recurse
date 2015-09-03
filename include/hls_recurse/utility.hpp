@@ -1,6 +1,14 @@
 #ifndef utility_hpp
 #define utility_hpp
 
+#include <assert.h>
+
+#ifdef __GNUC__
+#define HLS_INLINE_STEP inline __attribute__((always_inline))
+#else
+#define HLS_INLINE_STEP inline 
+#endif
+
 #include <time.h>
 
 namespace hls_recurse
