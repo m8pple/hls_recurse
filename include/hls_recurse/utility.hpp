@@ -3,16 +3,36 @@
 
 #include <assert.h>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #define HLS_INLINE_STEP inline __attribute__((always_inline))
+#define HLS_NO_RETURN __attribute__((noreturn))
+
 #else
 #define HLS_INLINE_STEP inline 
+#define HLS_NO_RETURN 
 #endif
 
 #include <time.h>
 
 namespace hls_recurse
 {
+    
+/*! Used in situations where it is a fundamental error if the
+    function ever gets called. In debug builds will assert,
+    in release builds will try to indicate to the optimiser
+    that the code can't be reached
+*/
+HLS_INLINE_STEP HLS_NO_RETURN logic_error_if_reachable() 
+{
+    assert(0);
+#if defined(__GNUC__) || defined(__clang__)
+    __builtin_unreachable();
+#else
+    // Scream "UB!" at the compiler
+    int x=5/0;
+    *(static_cast<int*>(0)) = 0;
+#endif
+}
 
 uint64_t time_now()
 {

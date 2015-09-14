@@ -331,6 +331,18 @@ HLS_INLINE_STEP hls_binding_tuple<TFirst,TRest...> make_hls_binding_tuple(TFirst
     return hls_binding_tuple<TFirst,TRest...>(first, _rest);
 }
 
+template<class ...TB>
+HLS_INLINE_STEP hls_binding_tuple<TB...> concatenate_binding_tuples(const hls_binding_tuple<> &a, const hls_binding_tuple<TB...> &b)
+{
+    return b;
+}
+
+template<class ...TA, class ...TB>
+HLS_INLINE_STEP hls_binding_tuple<TA...,TB...> concatenate_binding_tuples(const hls_binding_tuple<TA...> &a, const hls_binding_tuple<TB...> &b)
+{
+    return make_hls_binding_tuple(a.first,concatenate_binding_tuples(a.rest, b));
+}
+
 
 }; // HLSrec
 

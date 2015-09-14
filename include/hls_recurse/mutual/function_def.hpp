@@ -32,8 +32,9 @@ struct function_def
 };
     
 template<unsigned TId, class TRetType, class ...TArgTypes, class ...TLocalTypes, class TBody>
-struct function_def<TId, TRetType, hls_binding_tuple<TArgTypes...>, hls_binding_tuple<TLocalTypes...>, TBody>
+class function_def<TId, TRetType, hls_binding_tuple<TArgTypes...>, hls_binding_tuple<TLocalTypes...>, TBody>
 {   
+public:
     static const unsigned function_id = TId;
     
     // We have one extra slot to handle implicit return
@@ -42,8 +43,12 @@ struct function_def<TId, TRetType, hls_binding_tuple<TArgTypes...>, hls_binding_
     typedef TRetType signature_type(TArgTypes...);
     
     typedef TRetType return_type;
+    
     typedef hls_state_tuple<TArgTypes...> input_state_type;
     typedef hls_binding_tuple<TArgTypes...> input_binding_type;
+    
+    typedef hls_state_tuple<TLocalTypes...> locals_state_type;
+    typedef hls_binding_tuple<TLocalTypes...> locals_binding_type;
     
     typedef hls_state_tuple<TArgTypes...,TLocalTypes...> total_state_type;
     typedef hls_binding_tuple<TArgTypes...,TLocalTypes...> total_binding_type;
@@ -55,16 +60,31 @@ struct function_def<TId, TRetType, hls_binding_tuple<TArgTypes...>, hls_binding_
     )
         : m_arguments(arguments)
         , m_locals(locals)
+        , m_state(concatenate_binding_tuples(arguments,locals))
         , m_body(body)
     {}
     
-    hls_binding_tuple<TArgTypes...> m_arguments;
-    hls_binding_tuple<TLocalTypes...> m_locals;
+private:
+    input_binding_type m_arguments;
+    locals_binding_type m_locals;
+    total_binding_type m_state;
     const TBody m_body;
         
-        
+public:
+    HLS_INLINE_STEP total_state_type GetState() const
+    { return total_state_type(m_state); }
+    
+    HLS_INLINE_STEP void SetState(const total_state_type &s)
+    { m_state=s; }
+    
+    HLS_INLINE_STEP void SetArguments(const input_state_type &s)
+    {
+        m_arguments=s;
+        m_locals=locals_state_type();
+    }
+
     template<unsigned TBase, traits_t TTraits, class TContext>
-    unsigned step(unsigned curr, TContext &ctxt) const
+    HLS_INLINE_STEP unsigned step(unsigned curr, TContext &ctxt) const
     {
         assert(curr>=TBase);
         assert(curr<TBase+total_state_count);
@@ -201,6 +221,8 @@ struct function_def_list<
         static_assert(IsValidId<TSelId>(), "Attempt to get start state of unknown function.");
         return detail::function_def_by_id<TSelId,function_def_list>::relative_start_state;
     }
+    
+    static constexpr unsigned
     
     static_assert(detail::function_def_by_id<TId,function_def_list>::relative_index < detail::MAX_INDEX, "Function def list contains the same id twice.");
     

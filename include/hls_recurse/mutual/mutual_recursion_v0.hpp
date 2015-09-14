@@ -23,102 +23,104 @@ struct CallStep
     template<unsigned TBase, traits_t TTraits, class TContext>
     HLS_INLINE_STEP unsigned step(unsigned curr, TContext &ctxt) const
     {
+        // TContext is actually a multi_stack<...> for the set of
+        // active functions
+        
         assert(curr==TBase);
 
         auto args=m_argSrc();
-
-        // TODO: Tail recursion
         
-        return ctxt.Call<TId>(args);
+        ctxt.PushReturnPoint(curr+1);
+        ctxt.PushArguments(args);
+
+        return ctxt.template StartStateOf<TId>();
     }
 };
 
-template<unsigned SN>
-    class selector
-    {
-        template<class TStateTuple>
-        void SetContext(const TStateTuple &tuple)
-        {
-            m_parent.tail.template SetContext<SN>(tuple);
-        }
-        
-        typedef decltype(m_parent.tail.template GetReturnValueById<SN>()) return_type;
-        
-        return_type GetReturnValueById()
-        {
-            return m_parent.tail.template GetReturnValueById<SN>();
-        }
-    };
-    
-    template<>
-    class selector<N>
-    {
-        template<class TStateTuple>
-        void SetContextById(const TStateTuple &tuple)
-        {
-            m_parent.SetContext(tuple);
-        }
-        
-        typedef decltype(m_parent.GetReturnValue()) return_type;
-        
-        return_type GetReturnValueById()
-        {
-            return m_parent.tail.template GetReturnValue();
-        }
-    };
 
 
 
-
-
-    
-
-template<unsigned N, class THeadBody,class ...TTailBodies>
-class multi_stack
+template<class TAllFuncs, class TDoneStacks, class TCallId, class TCallArgSrc>
+function_def_by_id<TCallId,TAllFuncs>::return_type
+    run_step_impl(
+    const TAllFuncs &allDefs,
+    const function_def_list<> &todoFuncs,
+    TDoneStacks &doneStack,
+    const CallStep<TCallId,TCallArgSrc> &call
+)
 {
-    // Id of the body associated with this stack
-    static const unsigned function_id = ...;
-    static const unsigned function_state_count = body_t::total_state_count;
+    // Base case: all data stacks have  been created, we actually
+    // now run the function
     
-    typedef ... state_t;
-    typedef ... binding_t;
-    typedef ... body_t;
+    const traits_t Traits = (traits_t)(InheritedTrait_SequenceEnd|InheritedTrait_ReturnPosition);
     
-    multi_stack<TTail> tail;
+    // This is the state after the end of the body, which indicates the
+    // entire thing has returned
+    const unsigned top_level_return=allDefs.total_state_count;    
     
-    binding_t m_context;
+    // Push the initial call context and set the state to the start
+    // of that function
+    auto args=call.m_argSrc();
+    stack_by_id<TCallId>::PushContext(top_level_return, args);
+    unsigned s=allDefs.template StartStateOf<TCallId>();
     
-    /*! Return the starting state for given function id, 
-        or 0xFFFFFFFFul if it doesn't exist */
-    static constexpr unsigned GetFunctionStartState(unsigned id)
-    {
-        if(id==function_id){
-            return 0;
-        }else{
-            return function_state_count+tail_t::GetFunctionStartState(id);
-        }
-    }
-    
-    
-    template<unsigned TTargetId,class TArgs>
-    unsigned Call(
-};    
+	while(s != top_level_return){
+        assert( (s&StateCode_SpecialMask) || (s < top_level_return));
+        
+  		if(s==StateCode_Return){
+            
+			if(call_stack.IsEmpty()){
+				// end of the state machine, no more context. Return
+				break;
+			}else{
+				// end of the state machine, more context. pop to previous frame
+				s=call_stack.PopContext();
+			}
+        }else if(s&StateCode_SpecialMask){
+            // No special codes should bubble up to us here, we only do returns
+            // and normal states
+            logic_error_if_reachable();
+		}else{
+            // All function defs have an explicit return in the trailing position,
+            // there shouldn't be any implicit returns.
+            
+			const traits_t Traits = (traits_t)(InheritedTrait_SequenceEnd|InheritedTrait_ReturnPosition);
 
-
-TRet run_functions(const TFuncList &body, unsigned initId, TInitArgs ...args)
-{
-    const unsigned N = ...; // Number of functions
-    
-    multi_stack.template SetContext<N-1>(make_hls_state_tuple(args...));
-
-    unsigned sFunc=N-1; // Last function is active
-	unsigned s=0;
-	while(1){
-        func=multi_stack.RunToReturnOrCall(func);
+            s=body.template step<0,Traits,call_stack_t>(s, call_stack);
+		}
 	}
-
-    return call_stack.template GetReturnHolder<N-1>().get();
+    
+    
+    return stack_by_id<TCallId>::GetReturnHolder(doneStack).get();
 }
+
+template<class TAllFuncs, class TTodoFuncs, class TDoneStacks, class TCallId, class TCallArgSrc>
+function_def_by_id<TCallId,TAllFuncs>::return_type run_step_impl(
+    const TAllFuncs &allDefs,
+    const TTodoFuncs &todoFuncs,
+    TDoneStacks &doneStack,
+    const CallStep<TCallId,TCallArgSrc> &call
+)
+{
+    stack_entry_t stackStorage[1024];
+    
+    multi_stack call_stack(stackStorage, defs.head, tailStack);
+    
+    return run_step_impl(allDefs, todoFuncs.tail, call_stack, call);
+}
+
+
+
+template<class TAllFuncs, class TCallId, class TCallArgSrc>
+function_def_by_id<TCallId,TAllFuncs>::return_type run_mutual(
+    const TAllFuncs &allDefs,
+    const CallStep<TCallId,TCallArgSrc> &call
+){
+    multi_stack<> baseStack;
+    
+    return run_step_impl(allDefs, allDefs, baseStack, call);
+}
+
 
 #error "None of this works, just sketching out ideas."
 
