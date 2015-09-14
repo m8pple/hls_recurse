@@ -6,6 +6,7 @@ set(VIVADO_HLS /cygdrive/C/Usr/Xilinx2015.2/Vivado_HLS/2015.2
 # things break due to /cygpath prefix on cygwin which VHLS doesn't understand.
 file(RELATIVE_PATH HLS_RECURSE_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_custom_target(eval_vhls_synth)
 
 function(add_vivado_hls_core DESIGN_NAME)
 
@@ -27,6 +28,8 @@ add_custom_target(eval_vhls_${DESIGN_NAME}_synth
     DEPENDS ${DESIGN_NAME}/synthesise.tcl
     DEPENDS ${DESIGN_NAME}/synthesise
 )
+
+add_dependencies(eval_vhls_synth eval_vhls_${DESIGN_NAME}_synth)
 
 endfunction(add_vivado_hls_core)
 
