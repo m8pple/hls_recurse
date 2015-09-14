@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.2)
+cmake_minimum_required (VERSION 3.1)
 project (hls_recursion)
 
 set (CMAKE_CXX_STANDARD 11)
@@ -16,3 +16,5 @@ enable_testing()
 add_subdirectory(examples)
 add_subdirectory(core)
 add_subdirectory(mutual)
+add_subdirectory(eval)
+

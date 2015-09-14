@@ -73,13 +73,15 @@ public:
     {
         return m_return;
     }
-    
+
+#ifndef __SYNTHESIS__
     std::ostream &dump(std::ostream &dst)
     {
         dst<<"Stack ptr = "<<m_stackPtr<<"\n";
         dst<<" state    = "; m_state.dump(dst)<<"\n";
         return dst;
     }
+#endif
 };
 
 template<class TRet,class TStateTyple>
@@ -103,11 +105,11 @@ struct call_stack_for_binding_tuple<TRet,hls_binding_tuple<TState...> >
 }; // v1
 
 template<class TRet, class TImpl, class ...TState>
-TRet run_function_old(const TImpl &body, TState &...state)
+HLS_INLINE_STEP TRet run_function_old(const TImpl &body, TState &...state)
 {
     typedef v1::CallStack<TRet, TState...> call_stack_t;
 
-	typename call_stack_t::stack_entry_t stack[1024];
+	typename call_stack_t::stack_entry_t stack[512];
 
 	call_stack_t call_stack(stack, state...);
 
@@ -116,7 +118,7 @@ TRet run_function_old(const TImpl &body, TState &...state)
     call_stack.SetContext(make_hls_state_tuple(state...));
 
 	unsigned s=0;
-	while(1){
+	run_function_old : while(1){
   		if(
 			(s==length) // implicit return
 			||

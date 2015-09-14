@@ -1,0 +1,16 @@
+#!/bin/bash
+CPPFLAGS="-D__SYNTHESIS__=1 -std=c++11 -O3 -I ../../../$2/../../../include $3"
+
+echo "open_project -reset $1"
+echo "open_solution -reset sim"
+echo "set_part virtex7"
+echo "create_clock -period 150MHz"
+echo "config_schedule -verbose -effort high"
+echo "config_interface -register_io scalar_all"
+echo "add_files -cflags \"${CPPFLAGS}\" ../../../$2/$1/vhls_$1.cpp"
+echo "set_top vhls_$1"
+echo "csynth_design"
+#echo "export_design -evaluate vhdl -format ip_catalog"
+echo "close_solution"
+echo "close_project"
+echo "exit"

@@ -13,19 +13,19 @@ struct imatrix_t
     int base;
 };
 
-void set(uint32_t *p, const imatrix_t &m, int r, int c, uint32_t val)
+HLS_INLINE_STEP void set(uint32_t *p, const imatrix_t &m, int r, int c, uint32_t val)
 {
     assert(r < m.n);
-    assert(c < m.n);    
+    assert(c < m.n);
     p[m.base+r*m.stride+c]=val;
 }
 
-uint32_t get(const uint32_t *p, const imatrix_t &m, int r, int c)
+HLS_INLINE_STEP uint32_t get(const uint32_t *p, const imatrix_t &m, int r, int c)
 {
     return p[m.base+r*m.stride+c];
 }
 
-imatrix_t quad(const imatrix_t &m, int r, int c)
+HLS_INLINE_STEP imatrix_t quad(const imatrix_t &m, int r, int c)
 {
     assert(m.n>1);
     assert(0<=r && r<2);
@@ -34,7 +34,7 @@ imatrix_t quad(const imatrix_t &m, int r, int c)
     return imatrix_t{ hn, m.stride, m.base+r*hn*m.stride+c*hn };
 }
 
-void add_matrix(uint32_t * p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b)
+HLS_INLINE_STEP void add_matrix(uint32_t * p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b)
 {
     int n=dst.n;
     for(int r=0; r<n; r++){
@@ -44,7 +44,7 @@ void add_matrix(uint32_t * p, const imatrix_t &dst, const imatrix_t &a, const im
     }
 }
 
-void sub_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b)
+HLS_INLINE_STEP void sub_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b)
 {
     int n=dst.n;
     for(int r=0; r<n; r++){
@@ -54,7 +54,7 @@ void sub_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const ima
     }
 }
 
-void add_sub_add_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b, const imatrix_t &c, const imatrix_t &d)
+HLS_INLINE_STEP void add_sub_add_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b, const imatrix_t &c, const imatrix_t &d)
 {
     int n=dst.n;
     for(int r=0; r<n; r++){
@@ -69,7 +69,7 @@ void add_sub_add_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, c
 
 
 
-void mul_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b)
+HLS_INLINE_STEP void mul_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const imatrix_t &b)
 {
     int n=dst.n;
     for(int r=0; r<n; r++){
@@ -86,7 +86,7 @@ void mul_matrix(uint32_t *p, const imatrix_t &dst, const imatrix_t &a, const ima
 
 typedef int ifree_region_t;
 
-imatrix_t alloc_matrix(ifree_region_t &h, int n)
+HLS_INLINE_STEP imatrix_t alloc_matrix(ifree_region_t &h, int n)
 {
     int data=h;
     h+=n*n;
@@ -153,7 +153,7 @@ void f2_strassen_indexed(uint32_t *p, imatrix_t dst, imatrix_t a, imatrix_t b, i
     int n;
     imatrix_t tmp1, tmp2;
     imatrix_t M1, M2, M3, M4, M5, M6, M7;
-    
+
     run_function_old<void>(
         Sequence(
             [&](){ n=a.n; },
@@ -236,7 +236,7 @@ bool test_strassen_indexed(TImpl strassen_indexed)
     uint32_t *p=iglobalMem;
 
     const unsigned n=256;
-    
+
     imatrix_t a=alloc_matrix(hFree, n);
     imatrix_t b=alloc_matrix(hFree, n);
     imatrix_t got=alloc_matrix(hFree, n);

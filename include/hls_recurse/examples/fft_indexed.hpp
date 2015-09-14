@@ -3,7 +3,7 @@
 
 #include "hls_recurse/state_machine_self_recursion.hpp"
 
-#include "complex.hpp"
+#include "hls_recurse/complex.hpp"
 
 namespace hls_recurse
 {
@@ -38,7 +38,7 @@ void f2_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
     int sIn=1;
     int bOut=0;
     int sOut=1;
-    
+
     run_function_old<void>(
         IfElse([&](){ return n<=2; },
             [&](){

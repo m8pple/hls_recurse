@@ -3,7 +3,9 @@
 
 #include "hls_recurse/utility.hpp"
 
+#ifndef __SYNTHESIS__
 #include <iostream>
+#endif
 
 namespace hls_recurse
 {
@@ -16,17 +18,17 @@ struct hls_state_tuple;
 template<class ...TParts>
 struct hls_binding_tuple;
 
-    
+
 namespace detail
 {
-        
+
     template<class T>
     struct is_state_tuple
     { static const int value = 0; };
 
     template<class ...T>
     struct is_state_tuple<hls_state_tuple<T...>>
-    { static const int value = 1; };    
+    { static const int value = 1; };
 
 
     template<class T>
@@ -35,24 +37,25 @@ namespace detail
 
     template<class ...T>
     struct is_binding_tuple<hls_binding_tuple<T...>>
-    { static const int value = 1; };    
-};        
-    
+    { static const int value = 1; };
+};
+
 
 template<>
 struct hls_state_tuple<>
 {
 public:
-    HLS_INLINE_STEP hls_state_tuple()
-    {}
+    HLS_INLINE_STEP hls_state_tuple() = default;
 
     HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<> &)
     {}
 
+#ifndef __SYNTHESIS__
     std::ostream &dump(std::ostream &dst)
     {
         return dst;
     }
+#endif
 };
 
 
@@ -62,7 +65,7 @@ struct hls_state_tuple<TFirst,TRest...>
     static_assert(!detail::is_state_tuple<TFirst>::value, "A state tuple cannot contain another state tuple.");
     static_assert(!detail::is_binding_tuple<TFirst>::value, "A state tuple cannot contain a binding tuple.");
     static_assert(!std::is_reference<TFirst>::value, "A state tuple cannot contain a reference.");
-    
+
 public:
     TFirst first;
     hls_state_tuple<TRest...> rest;
@@ -70,55 +73,52 @@ public:
 
     // Don't really need the explicit default construction, just making
     // clear that is what happens
-    HLS_INLINE_STEP hls_state_tuple()
-        : first() // Default construct
-        , rest()  // Default construct
-    {}
-    
+    HLS_INLINE_STEP hls_state_tuple() = default;
+
     // Exact copy construction
     HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<TFirst,TRest...> &x)
         : first(x.first)
         , rest(x.rest)
     {}
 
-        
+
     //! Used for exact construction by make_hls_state_tuple
     HLS_INLINE_STEP hls_state_tuple(hls_make_tag, const TFirst &_first, const hls_state_tuple<TRest...> &_rest)
         : first(_first)
         , rest(_rest)
     {}
-        
+
     //! Create a tuple from a parameter pack
     HLS_INLINE_STEP hls_state_tuple(const TFirst &_first, const TRest &..._rest)
         : first(_first)
         , rest(_rest...)
     {}
-        
-    
-    
-        
+
+
+
+
     //! Create a tuple from head and tail, then default all the remaining parameters
     HLS_INLINE_STEP hls_state_tuple(const TFirst &_first, const hls_state_tuple<> &_rest)
         : first(_first)
         , rest(_rest)
     {}
 
-    
-        
+
+
     // Allow for slight mismatches, as long as they are copy constructible
     template<class TFirstAlt, class TRestHead, class ...TRestAlt>
     HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<TFirstAlt,TRestHead,TRestAlt...> &x)
         : first(x.first)
         , rest(x.rest)
     {}
-        
+
     // Allow for missing parts, and rely on default construction
     template<class TFirstAlt>
     HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<TFirstAlt> &x)
         : first(x.first)
         , rest()
     {}
-        
+
     // Complete default destruction from empty tuple
     HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<> &x)
         : first()
@@ -130,7 +130,7 @@ public:
         first=src.first;
         rest=src.rest;
     }
-    
+
     // Allow for slight mismatches, as long as they are assignable
     template<class TFirstAlt, class TRestHead, class ...TRestAlt>
     HLS_INLINE_STEP void operator=(const hls_binding_tuple<TFirstAlt,TRestHead,TRestAlt...> &src)
@@ -138,7 +138,7 @@ public:
         first=src.first;
         rest=src.rest;
     }
-    
+
     // Allow for missing remainder
     template<class TFirstAlt>
     HLS_INLINE_STEP void operator=(const hls_binding_tuple<TFirstAlt> &src)
@@ -146,19 +146,21 @@ public:
         first=src.first;
         rest=hls_state_tuple<TRest...>(); // Default constructor
     }
-    
+
     // Allow for missing everything
     HLS_INLINE_STEP void operator=(const hls_binding_tuple<> &src)
     {
         first=TFirst();
         rest=hls_state_tuple<TRest...>(); // Default constructor
     }
-    
+
+#ifndef __SYNTHESIS__
     std::ostream &dump(std::ostream &dst)
     {
         dst<<first<<",";
         return rest.dump(dst);
     }
+#endif
 };
 
 template<class ...TArgs>
@@ -237,11 +239,13 @@ public:
 
     HLS_INLINE_STEP void operator=(const hls_state_tuple<> &)
     {}
-       
+
+#ifndef __SYNTHESIS__
     std::ostream &dump(std::ostream &dst)
     {
         return dst;
     }
+#endif
 };
 
 template<class TFirst, class ...TRest>
@@ -272,7 +276,7 @@ public:
         first=src.first;
         rest=src.rest;
     }
-    
+
     // Allow for slight mismatches, as long as they are convertible
     template<class TFirstAlt, class TRestHead, class ...TRestAlt>
     HLS_INLINE_STEP void operator=(const hls_state_tuple<TFirstAlt,TRestHead,TRestAlt...> &src)
@@ -280,25 +284,27 @@ public:
         first=src.first;
         rest=src.rest;
     }
-    
+
     template<class TFirstAlt>
     HLS_INLINE_STEP void operator=(const hls_state_tuple<TFirstAlt> &src)
     {
         first=src.first;
         rest=hls_state_tuple<TRest...>();
     }
-    
+
     HLS_INLINE_STEP void operator=(const hls_state_tuple<> &src)
     {
         first=TFirst();
         rest=hls_state_tuple<TRest...>();
     }
-    
+
+#ifndef __SYNTHESIS__
     std::ostream &dump(std::ostream &dst)
     {
         dst<<first<<",";
         return rest.dump(dst);
     }
+#endif
 };
 
 

@@ -73,13 +73,15 @@ public:
     {
         return m_return;
     }
-    
+
+#ifndef __SYNTHESIS__
     std::ostream &dump(std::ostream &dst)
     {
         dst<<"Stack ptr = "<<m_stackPtr<<"\n";
         dst<<" state    = "; m_state.dump(dst)<<"\n";
         return dst;
     }
+#endif
 };
 
 template<class TRet,class TStateTyple>

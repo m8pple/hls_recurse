@@ -10,7 +10,10 @@
 #include "hls_recurse/state_machine_builder.hpp"
 
 #include <stdio.h>
+
+#ifndef __SYNTHESIS__
 #include <iostream>
+#endif
 
 #include "hls_recurse/hls_tuple.hpp"
 
@@ -66,7 +69,7 @@ struct RecurseStep
     {}
 
     enum{ total_state_count = 1 };
-    
+
     enum{ no_interrupts = 0 };
 
     template<unsigned TBase, traits_t TTraits, class TContext>
@@ -103,7 +106,7 @@ struct RecurseAndReturnStep
     {}
 
     enum{ total_state_count = 1 };
-    
+
     enum{ no_interrupts = 0 };
 
     template<unsigned TBase, traits_t TTraits, class TContext>
@@ -135,7 +138,7 @@ struct RecurseWithResultStep
     {}
 
     enum{ total_state_count = 2 };
-    
+
     enum{ no_interrupts = 0 };
 
     template<unsigned TBase, traits_t TTraits, class TContext>

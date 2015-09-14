@@ -18,7 +18,14 @@ namespace hls_recurse
  * Checks to see if a particular value is presently valid in a
  * given position.
  */
-int isValid(int number, int *puzzle, int row, int column) {
+/* NOTE: This should not really be inline, but it is done because
+   otherwise there is no way of communicating the array depth to
+    Vivado HLS.
+    I tried:
+    - Specifying int puzzle[81] as the type
+    - #pragma Directives on the port
+    */
+HLS_INLINE_STEP int isValid(int number, int *puzzle, int row, int column) {
     int i=0;
     int sectorRow = 3*(row/3);
     int sectorCol = 3*(column/3);
@@ -109,7 +116,7 @@ public:
                     RecurseAndReturn([&](){ return make_hls_state_tuple(row+1, 0); }),
                     RecurseAndReturn([&](){ return make_hls_state_tuple(row, column+1); })
                 )
-            ),  
+            ),
             // Try all possible values for the number
             [&](){ nextNum=1; },
             While([&](){ return nextNum<10; },

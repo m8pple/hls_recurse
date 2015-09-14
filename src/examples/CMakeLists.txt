@@ -1,5 +1,3 @@
-cmake_minimum_required (VERSION 3.2)
-
 add_executable_test(examples ackerman)
 add_executable_test(examples fft)
 add_executable_test(examples mmm)
