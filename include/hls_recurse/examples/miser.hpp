@@ -82,6 +82,26 @@ public:
     }
 };
 
+
+class miser_test_config
+{
+public:
+    static const unsigned N = 4;
+    
+    typedef XorShift128 rng_t;
+    
+    static float f(float p[N])
+    {
+        float acc=0;
+        for(unsigned i=0; i<N; i++){
+            acc += p[i]*p[i];
+        }
+        return expf(-acc/2);
+    };
+};
+
+
+
 class r_miser_impl
 {
 public:
@@ -98,11 +118,11 @@ public:
     power-of-two subdivision of region.
     */
     {
-        #define PFAC 0.1f
-        #define MNPT 15
-        #define MNBS 60
-        #define TINY 1.0e-30f
-        #define BIG 1.0e30f
+        const float PFAC=0.1f;
+        const int MNPT=15;
+        const int MNBS=60;
+        const float TINY=1.0e-30f;
+        const float BIG=1.0e30f;
         //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
         //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
         //a subregion is further bisected only if at least MNBS function evaluations are available. We take
@@ -210,7 +230,14 @@ public:
             // Combine left and right regions by equation (7.8.11) (1st line).
         }
     }
-}r_miser;
+}r_miser_generic;
+
+
+// This is miser configured with a particular function
+std::pair<float,float> r_miser(float regn[2*miser_test_config::N], unsigned long npts, float dith,  miser_test_config::rng_t &rng, RegionAllocator<float> region)
+{
+    return r_miser_generic.template eval<miser_test_config::N,decltype(miser_test_config::f),miser_test_config::rng_t>(miser_test_config::f, regn, npts, dith, rng, region);
+}
 
 
 class f2_miser_impl
@@ -229,12 +256,11 @@ public:
     //power-of-two subdivision of region.
     
     {
-        #define PFAC 0.1f
-        #define MNPT 15
-        #define MNBS 60
-        #define TINY 1.0e-30f
-        #define BIG 1.0e30f
-        //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
+        const float PFAC=0.1f;
+        const int MNPT=15;
+        const int MNBS=60;
+        const float TINY=1.0e-30f;
+        const float BIG=1.0e30f;        //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
         //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
         //a subregion is further bisected only if at least MNBS function evaluations are available. We take
         //MNBS = 4*MNPT.
@@ -363,22 +389,20 @@ public:
             regn_temp, jb, resl, resr, fracl, nptl, nptr, rmid
         );
     }
-} f2_miser;
+} f2_miser_generic;
+
+// This is miser configured with a particular function
+std::pair<float,float> f2_miser(float regn[2*miser_test_config::N], unsigned long npts, float dith,  miser_test_config::rng_t &rng, RegionAllocator<float> region)
+{
+    return f2_miser_generic.template eval<miser_test_config::N,decltype(miser_test_config::f),miser_test_config::rng_t>(miser_test_config::f, regn, npts, dith, rng, region);
+}
 
 template<class T>
 bool test_miser(T miser)
 {
     float globalMem[4096];
     
-    const unsigned N = 4;
-    
-    auto f=[](float p[N]){
-        float acc=0;
-        for(unsigned i=0; i<N; i++){
-            acc += p[i]*p[i];
-        }
-        return exp(-acc/2);
-    };
+    const unsigned N = miser_test_config::N;
     
     float regn[2*N]={0,0,0,0, 1,2,3,4};
     
@@ -388,7 +412,7 @@ bool test_miser(T miser)
     XorShift128 rng;
     RegionAllocator<float> region(globalMem, sizeof(globalMem)/sizeof(globalMem[0]));
     
-    auto res=miser.template eval<N,decltype(f),decltype(rng)>(f, regn, npts, dith, rng, region);
+    auto res=miser(regn, npts, dith, rng, region);
     
     //printf("ave = %g, std = %g\n", res.first, sqrtf(res.second));
     

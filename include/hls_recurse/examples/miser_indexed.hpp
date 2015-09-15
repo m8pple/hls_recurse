@@ -61,11 +61,11 @@ public:
     power-of-two subdivision of region.
     */
     {
-        #define PFAC 0.1f
-        #define MNPT 15
-        #define MNBS 60
-        #define TINY 1.0e-30f
-        #define BIG 1.0e30f
+        const float PFAC=0.1f;
+        const int MNPT=15;
+        const int MNBS=60;
+        const float TINY=1.0e-30f;
+        const float BIG=1.0e30f;
         //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
         //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
         //a subregion is further bisected only if at least MNBS function evaluations are available. We take
@@ -173,37 +173,44 @@ public:
             // Combine left and right regions by equation (7.8.11) (1st line).
         }
     }
-}r_miser_indexed;
+}r_miser_indexed_generic;
 
-/*
-class f2_miser_impl
+
+std::pair<float,float> r_miser_indexed(float *p, unsigned regn, unsigned long npts, float dith,  unsigned freeStart, unsigned freeTotal)
+{
+    miser_test_config::rng_t rng;
+    RegionAllocatorI<float> region(freeStart, freeTotal);
+    return r_miser_indexed_generic.template eval<miser_test_config::N,decltype(miser_test_config::f),miser_test_config::rng_t>(miser_test_config::f, p, regn, npts, dith, rng, region);
+}
+
+class f2_miser_indexed_impl
 {
 public:
     template<unsigned TDim, class TFunc, class TRng>
-    static std::pair<float,float> eval(TFunc func, float regn[2*TDim], unsigned long npts, float dith, TRng &rng, RegionAllocator<float> region)
-    
-    //Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
-    //specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
-    //region followed by ndim “upper-right” coordinates. The function is sampled a total of npts
-    //times, at locations determined by the method of recursive stratified sampling. The mean value
-    //of the function in the region is returned as ave; an estimate of the statistical uncertainty of ave
-    //(square of standard deviation) is returned as var. The input parameter dith should normally
-    //be set to zero, but can be set to (e.g.) 0.1 if func’s active region falls on the boundary of a
-    //power-of-two subdivision of region.
-    
+    static std::pair<float,float> eval(TFunc func, float *p, unsigned regn, unsigned long npts, float dith,  TRng &rng, RegionAllocatorI<float> region)
+    /*
+    Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
+    specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
+    region followed by ndim “upper-right” coordinates. The function is sampled a total of npts
+    times, at locations determined by the method of recursive stratified sampling. The mean value
+    of the function in the region is returned as ave; an estimate of the statistical uncertainty of ave
+    (square of standard deviation) is returned as var. The input parameter dith should normally
+    be set to zero, but can be set to (e.g.) 0.1 if func’s active region falls on the boundary of a
+    power-of-two subdivision of region.
+    */
     {
-        #define PFAC 0.1f
-        #define MNPT 15
-        #define MNBS 60
-        #define TINY 1.0e-30f
-        #define BIG 1.0e30f
+        const float PFAC=0.1f;
+        const int MNPT=15;
+        const int MNBS=60;
+        const float TINY=1.0e-30f;
+        const float BIG=1.0e30f;
         //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
         //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
         //a subregion is further bisected only if at least MNBS function evaluations are available. We take
         //MNBS = 4*MNPT.
         
         
-        float *regn_temp;
+        unsigned regn_temp;
         
         unsigned long n,npre,nptl,nptr;
         int j,jb;
@@ -213,17 +220,17 @@ public:
         float sum,sumb,summ,summ2;
         
         float pt[TDim];
-        float *rmid;
+        unsigned rmid;
         
         std::pair<float,float> resl, resr;
         
         return run_function_old<std::pair<float,float>>(
-            IfElse( [&](){ return npts < MNBS; },  // Too few points to bisect; do straight
+            IfElse([&](){ return npts < MNBS; }, // Too few points to bisect; do straight
                 Sequence(
                     [&](){
                         summ=summ2=0.0; //Monte Carlo.
                         for (n=0;n<npts;n++) {
-                            rng.ranpt(pt,regn,TDim);
+                            rng.ranpt(pt,p+regn,TDim);
                             fval=func(pt);
                             summ += fval;
                             summ2 += fval * fval;
@@ -234,7 +241,7 @@ public:
                         std::max(TINY,(summ2-summ*summ/npts)/(npts*npts))
                     );})
                 )
-            ,   //Do the preliminary (uniform) sampling.
+            , //Do the preliminary (uniform) sampling.
                 Sequence(
                     [&](){
                         rmid=region.alloc(TDim);
@@ -247,15 +254,15 @@ public:
                             float fminr[TDim];
                             for (j=0;j<TDim;j++) { // Initialize the left and right bounds for
                                 float s=rng()*dith;
-                                rmid[j]=(0.5+s)*regn[j]+(0.5-s)*regn[TDim+j];
+                                p[rmid+j]=(0.5+s)*p[regn+j]+(0.5-s)*p[regn+TDim+j];
                                 fminl[j]=fminr[j]=BIG;
                                 fmaxl[j]=fmaxr[j] = -BIG;
                             }
                             for (n=0;n<npre;n++) { // Loop over the points in the sample.
-                                rng.ranpt(pt,regn,TDim);
+                                rng.ranpt(pt,p+regn,TDim);
                                 fval=func(pt);
                                 for (j=0;j<TDim;j++) { // Find the left and right bounds for each
-                                    if (pt[j]<=rmid[j]) { // dimension.
+                                    if (pt[j]<=p[rmid+j]) { // dimension.
                                         fminl[j]=std::min(fminl[j],fval);
                                         fmaxl[j]=std::max(fmaxl[j],fval);
                                     }
@@ -286,9 +293,9 @@ public:
                         if (!jb){
                             jb=rng.NextUInt()%TDim;
                         }
-                        rgl=regn[jb]; // Apportion the remaining points between
-                        rgm=rmid[jb]; // left and right.
-                        rgr=regn[TDim+jb];
+                        rgl=p[regn+jb]; // Apportion the remaining points between
+                        rgm=p[rmid+jb]; // left and right.
+                        rgr=p[regn+TDim+jb];
                         fracl=fabs((rgm-rgl)/(rgr-rgl));
                         nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*fracl*siglb
                             /(fracl*siglb+(1.0-fracl)*sigrb)); //Equation (7.8.23).
@@ -296,71 +303,68 @@ public:
                         
                         regn_temp=region.alloc(2*TDim); //Now allocate and integrate the two sub
                         for(j=0;j<TDim;j++) { // regions.
-                            regn_temp[j]=regn[j];
-                            regn_temp[TDim+j]=regn[TDim+j];
+                            p[regn_temp+j]=p[regn+j];
+                            p[regn_temp+TDim+j]=p[regn+TDim+j];
                         }
                         
-                        regn_temp[TDim+jb]=rmid[jb];
+                        p[regn_temp+TDim+jb]=p[rmid+jb];
                     },
-                    RecurseWithResult(resl, [&](){ return make_hls_state_tuple(
-                        regn_temp,nptl,dith, region.NewRegion()
+                    RecurseWithResult(resl,[&](){ return make_hls_state_tuple(
+                        regn_temp,nptl,dith,rng, region.NewRegion()
                     );}),
                     [&](){
-                        regn_temp[jb]=rmid[jb]; //Dispatch recursive call; will return back
-                        regn_temp[TDim+jb]=regn[TDim+jb]; // here eventually.
+                        p[regn_temp+jb]=p[rmid+jb]; //Dispatch recursive call; will return back
+                        p[regn_temp+TDim+jb]=p[regn+TDim+jb]; // here eventually.
                     },
-                    RecurseWithResult(resr, [&](){ return make_hls_state_tuple(
-                        regn_temp,nptr,dith, region.NewRegion()
+                    RecurseWithResult(resr,[&](){ return make_hls_state_tuple(
+                        regn_temp,nptr,dith,rng, region.NewRegion()
                     );}),
-                    Return([&](){
-                        return std::make_pair(
-                            fracl*resl.first+(1-fracl)*resr.first,
-                            fracl*fracl*resl.second+(1-fracl)*(1-fracl)*resr.second
-                        );
-                    })
+                    Return([&](){ return std::make_pair(
+                        fracl*resl.first+(1-fracl)*resr.first,
+                        fracl*fracl*resl.second+(1-fracl)*(1-fracl)*resr.second
+                    ); })
                     // Combine left and right regions by equation (7.8.11) (1st line).
                 )
-            )
-            ,
-            regn, npts, dith, region,
+            ),
+            regn, npts, dith, rng, region,
             regn_temp, jb, resl, resr, fracl, nptl, nptr, rmid
         );
     }
-} f2_miser;
-*/
+}f2_miser_indexed_generic;
+
+std::pair<float,float> f2_miser_indexed(float *p, unsigned regn, unsigned long npts, float dith, unsigned freeStart, unsigned freeTotal)
+{
+    miser_test_config::rng_t rng;
+    RegionAllocatorI<float> region(freeStart, freeTotal);
+    return f2_miser_indexed_generic.template eval<miser_test_config::N,decltype(miser_test_config::f),miser_test_config::rng_t>(miser_test_config::f, p, regn, npts, dith, rng, region);
+}
+
 template<class T>
 bool test_miser_indexed(T miser_indexed)
 {
-    const unsigned N = 4;
+    const unsigned N = miser_test_config::N;
     
-    auto f=[](float p[N]){
-        float acc=0;
-        for(unsigned i=0; i<N; i++){
-            acc += p[i]*p[i];
-        }
-        return exp(-acc/2);
-    };
     
     float p[4096];
     
-    RegionAllocatorI<float> region(0, sizeof(p)/sizeof(p[0]));
-    
-    unsigned regn=region.alloc(N*2);
-    p[regn+0]=0;
-    p[regn+1]=0;
-    p[regn+2]=0;
-    p[regn+3]=0;
-    p[regn+4]=1;
-    p[regn+5]=2;
-    p[regn+6]=3;
-    p[regn+7]=4;
+    // Initial N*2 region
+    p[0]=0;
+    p[1]=0;
+    p[2]=0;
+    p[3]=0;
+    p[4]=1;
+    p[5]=2;
+    p[6]=3;
+    p[7]=4;
     
     unsigned long npts=100000;
     float dith=0.05f;
     float ave, var;
-    XorShift128 rng;
     
-    auto res=miser_indexed.template eval<N,decltype(f),decltype(rng)>(f, p, regn, npts, dith, rng, region);
+    unsigned freeStart=N*2;
+    unsigned freeTotal=sizeof(p)-freeStart;
+    
+    auto res=miser_indexed(p, 0, npts, dith,freeStart, freeTotal);
     
     //printf("ave = %g, std = %g\n", res.first, sqrtf(res.second));
     

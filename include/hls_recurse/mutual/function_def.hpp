@@ -222,7 +222,6 @@ struct function_def_list<
         return detail::function_def_by_id<TSelId,function_def_list>::relative_start_state;
     }
     
-    static constexpr unsigned
     
     static_assert(detail::function_def_by_id<TId,function_def_list>::relative_index < detail::MAX_INDEX, "Function def list contains the same id twice.");
     
