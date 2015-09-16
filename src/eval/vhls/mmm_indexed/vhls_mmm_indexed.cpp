@@ -2,11 +2,11 @@
 
 using namespace hls_recurse;
 
-void vhls_mmm_indexed(int n, int stride, float *dst, const float *a, const float *b)
+void vhls_mmm_indexed(int n, int stride, element_t dst[4096], const element_t a[4096], const element_t b[4096])
 {
-    #pragma HLS INTERFACE depth=65536 port=a
-    #pragma HLS INTERFACE depth=65536 port=b
-    #pragma HLS INTERFACE depth=65536 port=dst
+    #pragma HLS INTERFACE ap_memory depth=4096 port=a
+    #pragma HLS INTERFACE ap_memory depth=4096 port=b
+    #pragma HLS INTERFACE ap_memory depth=4096 port=dst
 
     f2_mmm_indexed(n, stride, dst, a, b);
 }

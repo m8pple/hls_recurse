@@ -7,10 +7,8 @@
 namespace hls_recurse
 {
 
-void r_sum_indexed(uint32_t n, float *array)
+void r_sum_indexed(uint32_t n, int32_t *array)
 {
-	#pragma HLS INTERFACE m_axi depth=1024 port=array
-
 	// TODO : This isn't really the same...
 
 	if( n<=1 ){
@@ -22,9 +20,8 @@ void r_sum_indexed(uint32_t n, float *array)
 	}
 }
 
-void f_sum_indexed(uint32_t _n, float *array)
+void f_sum_indexed(uint32_t _n, int32_t *array)
 {
-	#pragma HLS INTERFACE m_axi depth=1024 port=array
 
 	uint32_t n;
 	int index;
@@ -72,10 +69,8 @@ void f_sum_indexed(uint32_t _n, float *array)
 }
 
 
-void f2_sum_indexed(uint32_t _n, float *array)
+void f2_sum_indexed(uint32_t _n, int32_t *array)
 {
-	#pragma HLS INTERFACE m_axi depth=1024 port=array
-
 	uint32_t n=_n;
 	int index=0;
 
@@ -92,17 +87,34 @@ void f2_sum_indexed(uint32_t _n, float *array)
 	);
 }
 
+int32_t *g_array;
+
+void f3_sum_indexed(uint32_t _index, uint32_t _n)
+{
+	uint32_t n=_n;
+	uint32_t index=_index;
+
+	run_function_old<void>(
+		IfElse([&](){ return n<=1; },
+			Return(),
+			Sequence(
+				Recurse([&](){ return make_hls_state_tuple<uint32_t,uint32_t>(n/2, index); }),
+				Recurse([&](){ return make_hls_state_tuple<uint32_t,uint32_t>(n-(n/2), index+n/2); }),
+				[&](){  g_array[index] += g_array[index+n/2];  }
+			)
+		),
+		n, index
+	);
+}
+
 
 template<class T>
 bool test_sum_indexed(T sum_indexed)
 {
     const uint32_t n=100;
-    float x[n];
+    int32_t x[n];
 
-    // Using the floating-point counter to avoid a problem where
-    // legup 4.0 says:
-    //   Unrecognized Instruction:   %3 = uitofp i32 %2 to float
-    float fx=0;
+    int32_t fx=0;
     for(unsigned i=0;i<n;i++){
         x[i]=fx;
         fx=fx+1;

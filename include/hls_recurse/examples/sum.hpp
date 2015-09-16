@@ -8,11 +8,11 @@ namespace hls_recurse
 {
 
 class SumV1
-    : public Function<SumV1, void, uint32_t,float*>
+    : public Function<SumV1, void, uint32_t,int32_t*>
 {
 private:
     uint32_t n;
-    float *f;
+    int32_t *f;
 public:
     SumV1(stack_entry_t *stack)
         : function_base_t(*this, stack, n, f)
@@ -34,7 +34,7 @@ public:
     }
 };
 
-void f_sum(uint32_t n, float *f)
+void f_sum(uint32_t n, int32_t *f)
 {
     SumV1::stack_entry_t stack[64];
     SumV1 sum(stack);
@@ -42,7 +42,7 @@ void f_sum(uint32_t n, float *f)
     sum(n,f);
 }
 
-void f2_sum(uint32_t n, float *f)
+void f2_sum(uint32_t n, int32_t *f)
 {
     run_function_old<void>(
         IfElse([&](){ return n<=1; },
@@ -61,12 +61,9 @@ template<class T>
 bool test_sum(T sum)
 {
     const uint32_t n=100;
-    float x[n];
+    int32_t x[n];
 
-    // Using the floating-point counter to avoid a problem where
-    // legup 4.0 says:
-    //   Unrecognized Instruction:   %3 = uitofp i32 %2 to float
-    float fx=0;
+    int32_t fx=0;
     for(unsigned i=0;i<n;i++){
         x[i]=fx;
         fx=fx+1;

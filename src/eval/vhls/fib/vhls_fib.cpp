@@ -6,8 +6,3 @@ uint32_t vhls_fib(uint32_t n)
 {
     return f2_fib(n);
 }
-
-int main()
-{
-    return test_fib(vhls_fib);
-};

@@ -2,7 +2,7 @@
 
 using namespace hls_recurse;
 
-void vhls_strassen_indexed(uint32_t *p, int n)
+void vhls_strassen_indexed(uint32_t p[65536], int n)
 {
     imatrix_t a={n,n,0};
     imatrix_t b={n,n,n};

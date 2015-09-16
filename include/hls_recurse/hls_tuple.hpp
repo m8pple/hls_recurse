@@ -75,7 +75,9 @@ public:
     // clear that is what happens
     HLS_INLINE_STEP hls_state_tuple() = default;
 
-    // Exact copy construction
+    HLS_INLINE_STEP hls_state_tuple(const hls_state_tuple &) = default;
+
+    // Construction from binding tuple
     HLS_INLINE_STEP hls_state_tuple(const hls_binding_tuple<TFirst,TRest...> &x)
         : first(x.first)
         , rest(x.rest)

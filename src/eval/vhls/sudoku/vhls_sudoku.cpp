@@ -2,9 +2,9 @@
 
 using namespace hls_recurse;
 
-bool vhls_sudoku(int *puzzle)
+bool vhls_sudoku(int puzzle[81])
 {
-    #pragma HLS INTERFACE depth=81 port=puzzle
+    #pragma HLS INTERFACE ap_memory depth=81 port=puzzle
     return f2_sudoku(puzzle);
 }
 

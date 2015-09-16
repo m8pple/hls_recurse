@@ -2,10 +2,10 @@
 
 using namespace hls_recurse;
 
-void vhls_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
+void vhls_fft_indexed(int log2n, const complex_t pIn[4096], complex_t pOut[4096])
 {
-    #pragma HLS INTERFACE depth=65536 port=pIn
-    #pragma HLS INTERFACE depth=65536 port=pOut
+    #pragma HLS INTERFACE depth=4096 port=pIn
+    #pragma HLS INTERFACE depth=4096 port=pOut
 
     f2_fft_indexed(log2n, pIn, pOut);
 }

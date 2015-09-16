@@ -2,14 +2,16 @@
 
 using namespace hls_recurse;
 
-void vhls_miser_indexed(float *p, unsigned regn, unsigned long npts, float dith,  unsigned freeStart, unsigned freeTotal)
+float vhls_miser_indexed(float p[4096], unsigned regn, unsigned long npts, float dith,  unsigned freeStart, unsigned freeTotal)
 {
-    #pragma HLS INTERFACE depth=65536 port=p
+    #pragma HLS INTERFACE ap_memory depth=4096 port=p
 
-    f2_miser_indexed(p, regn, npts, dith, freeStart, freeTotal);
+    return f2_miser_indexed(p, regn, npts, dith, freeStart, freeTotal).first;
 }
 
+/*
 int main()
 {
     return test_miser_indexed(vhls_miser_indexed);
 };
+*/

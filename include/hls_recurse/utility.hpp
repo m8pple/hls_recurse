@@ -59,6 +59,22 @@ double time_delta(uint64_t begin, uint64_t end)
     return diff*1e-9;
 }
 
+// These min and max implementations are because std::min
+// uses <algorithm>, which somewhere deep inside uses
+// type_info, which Vivado HLS has turned off...
+
+template<class T>
+T min(const T &a, const T &b)
+{
+    return (a<b) ? a : b;
+}
+
+template<class T>
+T max(const T &a, const T &b)
+{
+    return (a<b) ? b : a;
+}
+
 }; // hls_recurse
 
 #endif
