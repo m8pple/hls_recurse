@@ -31,6 +31,14 @@ namespace hls_recurse
         {}
     };
 
+#ifndef __SYNTHESIS__
+    std::ostream &operator<<(std::ostream &dst, const float_pair_t &p)
+    {
+        dst<<"Pair<"<<p.first<<","<<p.second<<">";
+        return dst;
+    }
+#endif
+
 class XorShift128
 {
     uint32_t x, y, z, w;
@@ -50,12 +58,13 @@ public:
         return( w=(w^(w>>19))^(t^(t>>8)) );
     }
 
-    float operator()()
+    HLS_INLINE_STEP float operator()()
     {
         return NextUInt()*0.00000000023283064365386962890625f;
     }
 
-    void ranpt(float pt[], float regn[], int n)
+
+    HLS_INLINE_STEP void ranpt(float pt[], float regn[], int n)
     /*
         Returns a uniformly random point pt in an n-dimensional rectangular region. Used by miser;
         calls ran1 for uniform deviates. Your main program should initialize the global variable idum
@@ -65,6 +74,20 @@ public:
         int j;
         for (j=1;j<=n;j++){
             pt[j]=regn[j]+(regn[n+j]-regn[j])*(*this)();
+        }
+    }
+
+    template<unsigned TDim>
+    HLS_INLINE_STEP void ranpt_d(float pt[TDim], float regn[TDim])
+    /*
+        Returns a uniformly random point pt in an n-dimensional rectangular region. Used by miser;
+        calls ran1 for uniform deviates. Your main program should initialize the global variable idum
+        to a negative seed integer.
+    */
+    {
+        int j;
+        for (j=1;j<=TDim;j++){
+            pt[j]=regn[j]+(regn[TDim+j]-regn[j])*(*this)();
         }
     }
 };
@@ -98,7 +121,22 @@ public:
     {
         return RegionAllocator(*this);
     }
+
+#ifndef __SYNTHESIS__
+    void dump(std::ostream &o) const
+    {
+        o<<"RegionAllocator<"<<(void*)m_pFree<<","<<(void*)m_pMax<<">";
+    }
+#endif
 };
+
+#ifndef __SYNTHESIS__
+std::ostream &operator<<(std::ostream &o, const RegionAllocator<float> &r)
+{
+    r.dump(o);
+    return o;
+}
+#endif
 
 
 class miser_test_config
@@ -150,10 +188,10 @@ public:
         float *regn_temp;
 
         unsigned long n,npre,nptl,nptr;
-        int j,jb;
+        unsigned j,jb;
 
         float fracl,fval;
-        float rgl,rgm,rgr,s,sigl,siglb,sigr,sigrb;
+        float rgl,rgm,rgr,sigl,siglb,sigr,sigrb;
         float sum,sumb,summ,summ2;
 
         float pt[TDim];
@@ -287,10 +325,10 @@ public:
         float *regn_temp;
 
         unsigned long n,npre,nptl,nptr;
-        int j,jb;
+        unsigned j,jb;
 
         float fracl,fval;
-        float rgl,rgm,rgr,s,sigl,siglb,sigr,sigrb;
+        float rgl,rgm,rgr,sigl,siglb,sigr,sigrb;
         float sum,sumb,summ,summ2;
 
         float pt[TDim];
@@ -426,7 +464,6 @@ bool test_miser(T miser)
 
     unsigned long npts=100000;
     float dith=0.05f;
-    float ave, var;
     XorShift128 rng;
     RegionAllocator<float> region(globalMem, sizeof(globalMem)/sizeof(globalMem[0]));
 

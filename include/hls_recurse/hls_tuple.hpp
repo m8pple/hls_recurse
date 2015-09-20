@@ -51,10 +51,8 @@ public:
     {}
 
 #ifndef __SYNTHESIS__
-    std::ostream &dump(std::ostream &dst)
-    {
-        return dst;
-    }
+    void dump(std::ostream &dst) const
+    {}
 #endif
 };
 
@@ -157,10 +155,11 @@ public:
     }
 
 #ifndef __SYNTHESIS__
-    std::ostream &dump(std::ostream &dst)
+    void dump(std::ostream &dst) const
     {
-        dst<<first<<",";
-        return rest.dump(dst);
+        dst<<first;
+        dst<<",";
+        rest.dump(dst);
     }
 #endif
 };
@@ -243,10 +242,8 @@ public:
     {}
 
 #ifndef __SYNTHESIS__
-    std::ostream &dump(std::ostream &dst)
-    {
-        return dst;
-    }
+    void dump(std::ostream &dst) const
+    {}
 #endif
 };
 
@@ -301,10 +298,10 @@ public:
     }
 
 #ifndef __SYNTHESIS__
-    std::ostream &dump(std::ostream &dst)
+    void dump(std::ostream &dst) const
     {
         dst<<first<<",";
-        return rest.dump(dst);
+        rest.dump(dst);
     }
 #endif
 };

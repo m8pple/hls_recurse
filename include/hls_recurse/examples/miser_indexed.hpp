@@ -7,6 +7,8 @@
 #include <math.h>
 #include <utility>
 //#include <algorithm>
+#include <stdlib.h>
+#include <string.h>
 
 #include "hls_recurse/state_machine_self_recursion.hpp"
 
@@ -15,46 +17,46 @@
 namespace hls_recurse
 {
 
+/*
+    VHLS-HACK : remove dithering
+
+    VHLS-HACK - Pair of floats as a 64 bit int, to make sure
+    state is scalar
+
+    VHLS-HACK : rewrite powf(x,1.5)=sqrt(x*x*x
+
+    VHLS-HACK : inline function into loop
+*/
+
+typedef uint64_t pfloat_pair_t;
+
+float pfloat_pair_first(const pfloat_pair_t &p)
+{
+    uint32_t f=p&0xFFFFFFFFULL;
+    return *(float*)&f;
+}
+
+float pfloat_pair_second(const pfloat_pair_t &p)
+{
+    uint32_t f=(p>>32)&0xFFFFFFFFULL;
+    return *(float*)&f;
+}
+
+pfloat_pair_t pfloat_pair_create(float a, float b)
+{
+    uint32_t va=*(uint32_t*)&a;
+    uint32_t vb=*(uint32_t*)&b;
+    return va + (uint64_t(vb)<<32);
+}
+
+
 float x_to_one_half(float x)
 {
     return sqrtf(x*x*x);
 }
 
-template<class T>
-class RegionAllocatorI
+pfloat_pair_t r_miser_indexed(float *p, unsigned regn, unsigned long npts, uint32_t &seed, unsigned region)
 {
-private:
-    unsigned m_iFree, m_iMax;
-public:
-    RegionAllocatorI()
-        : m_iFree(0)
-        , m_iMax(0)
-    {}
-
-    RegionAllocatorI(unsigned iFree, unsigned n)
-        : m_iFree(iFree)
-        , m_iMax(iFree+n)
-    {}
-
-    unsigned alloc(unsigned n)
-    {
-        unsigned iRes=m_iFree;
-        m_iFree+=n;
-        assert(m_iFree < m_iMax);
-        return iRes;
-    }
-
-    RegionAllocatorI NewRegion()
-    {
-        return RegionAllocatorI(*this);
-    }
-};
-
-class r_miser_indexed_impl
-{
-public:
-    template<unsigned TDim, class TFunc, class TRng>
-    static float_pair_t eval(TFunc func, float *p, unsigned regn, unsigned long npts, float dith,  TRng &rng, RegionAllocatorI<float> region)
     /*
     Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
     specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
@@ -65,61 +67,291 @@ public:
     be set to zero, but can be set to (e.g.) 0.1 if func’s active region falls on the boundary of a
     power-of-two subdivision of region.
     */
-    {
-        const float PFAC=0.1f;
-        const int MNPT=15;
-        const int MNBS=60;
-        const float TINY=1.0e-30f;
-        const float BIG=1.0e30f;
-        //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
-        //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
-        //a subregion is further bisected only if at least MNBS function evaluations are available. We take
-        //MNBS = 4*MNPT.
 
+    const unsigned TDim=4;
+    const float PFAC=0.1f;
+    const int MNPT=15;
+    const int MNBS=60;
+    const float TINY=1.0e-30f;
+    const float BIG=1.0e30f;
+    //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
+    //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
+    //a subregion is further bisected only if at least MNBS function evaluations are available. We take
+    //MNBS = 4*MNPT.
 
-        unsigned regn_temp;
+    auto rngu=[&]() -> uint32_t{
+        seed=seed*1664525+1013904223;
+        return seed;
+    };
 
-        unsigned long n,npre,nptl,nptr;
-        int j,jb;
+    auto rngf=[&]() -> float{
+        return rngu() * 0.00000000023283064365386962890625f;
+    };
 
-        float fracl,fval;
-        float rgl,rgm,rgr,s,sigl,siglb,sigr,sigrb;
-        float sum,sumb,summ,summ2;
-
-        float pt[TDim];
-        unsigned rmid;
-        if (npts < MNBS) { // Too few points to bisect; do straight
-            summ=summ2=0.0; //Monte Carlo.
-            for (n=0;n<npts;n++) {
-                rng.ranpt(pt,p+regn,TDim);
-                fval=func(pt);
-                summ += fval;
-                summ2 += fval * fval;
+    if (npts < MNBS) { // Too few points to bisect; do straight
+        float summ=0.0f, summ2=0.0f; //Monte Carlo.
+        for (unsigned n=0;n<npts;n++) {
+            float acc=0;
+            for(unsigned i=0;i<TDim;i++){
+                float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
+                acc += x*x;
             }
-            return float_pair_t(
-                summ/npts,
-                max(TINY,(summ2-summ*summ/npts)/(npts*npts))
-            );
-        }else{ //Do the preliminary (uniform) sampling.
-            rmid=region.alloc(TDim);
-            npre=max((unsigned)(npts*PFAC),(unsigned)MNPT);
 
-            {
-                float fmaxl[TDim];
-                float fmaxr[TDim];
-                float fminl[TDim];
-                float fminr[TDim];
-                for (j=0;j<TDim;j++) { // Initialize the left and right bounds for
-                    float s=rng()*dith;
-                    p[rmid+j]=(0.5+s)*p[regn+j]+(0.5-s)*p[regn+TDim+j];
+            float fval=expf(-acc*0.5f);
+
+            summ += fval;
+            summ2 += fval * fval;
+        }
+        return pfloat_pair_create(
+            summ/npts,
+            max(TINY,(summ2-summ*summ/npts)/(npts*npts))
+        );
+    }else{ //Do the preliminary (uniform) sampling.
+        unsigned npre=max((unsigned)(npts*PFAC),(unsigned)MNPT);
+        //fprintf(stderr, "    depth=%d, npts=%u\n", depth, npts);
+
+        auto alloci=[&](unsigned n) -> unsigned
+        {
+            unsigned tmp=region;
+            region+=n;
+            return tmp;
+        };
+
+        auto alloc=[&](unsigned n) -> float *
+        {
+            return p+alloci(n);
+        };
+
+        auto pMid=[&](unsigned j){ return (p[regn+j]+p[regn+j+TDim])*0.5f; };
+
+
+        float *fmaxl=alloc(TDim);
+        float *fmaxr=alloc(TDim);
+        float *fminl=alloc(TDim);
+        float *fminr=alloc(TDim);
+
+        for (unsigned j=0;j<TDim;j++) { // Initialize the left and right bounds for
+            fminl[j]=fminr[j]=BIG;
+            fmaxl[j]=fmaxr[j] = -BIG;
+        }
+
+        unsigned jb=0;
+        float siglb, sigrb;
+
+        unsigned nptl, nptr;
+
+        float summ=0;
+        for (unsigned n=0;n<npre;n++) { // Loop over the points in the sample.
+            // VHLS-HACK : Inlined target function to get it to compile
+            // VHLS-HACK : avoided local array for pt
+            // VHLS-HACK : shift register through shift to avoid local array
+
+            uint32_t splits=0; // Shift-register of whether left or right
+
+            float acc=0;
+            for(unsigned i=0;i<TDim;i++){
+                float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
+                splits = splits + (x <= pMid(i) ? (1<<i) : 0 );
+
+                acc += x*x;
+            }
+
+            float fval=expf(-acc/2);
+
+            summ+=fval;
+
+            for (unsigned j=0;j<TDim;j++) { // Find the left and right bounds for each
+                if (splits&(1<<j)) { // dimension.
+                    fminl[j]=min(fminl[j],fval);
+                    fmaxl[j]=max(fmaxl[j],fval);
+                }
+                else {
+                    fminr[j]=min(fminr[j],fval);
+                    fmaxr[j]=max(fmaxr[j],fval);
+                }
+            }
+        }
+
+        float sumb=BIG; //Choose which dimension jb to bisect.
+        siglb=sigrb=1.0;
+        for (unsigned j=0;j<TDim;j++) {
+            if (fmaxl[j] > fminl[j] && fmaxr[j] > fminr[j]) {
+
+                //sigl=max(TINY,powf(fmaxl[j]-fminl[j],1.5f));
+                float sigl=max(TINY,x_to_one_half(fmaxl[j]-fminl[j]));
+                //sigr=max(TINY,powf(fmaxr[j]-fminr[j],1.5f));
+                float sigr=max(TINY,x_to_one_half(fmaxr[j]-fminr[j]));
+                float sum=sigl+sigr; //Equation (7.8.24), see text.
+                if (sum<=sumb)
+                {
+                    sumb=sum;
+                    jb=j;
+                    siglb=sigl;
+                    sigrb=sigr;
+                }
+            }
+        }
+
+        if (!jb){
+            jb=rngu()%TDim;
+        }
+
+        nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*siglb
+            /(siglb+sigrb)); //Equation (7.8.23).
+
+        nptr=npts-npre-nptl;
+
+        assert(nptl < 1000000);
+        assert(nptr < 1000000);
+
+        // VHLS-HACK: combining region creation to avoid extra lambda step
+        unsigned regn_left=alloci(2*TDim);
+        unsigned regn_right=alloci(2*TDim);
+
+        for(unsigned j=0;j<TDim;j++) { // regions.
+            p[regn_left+j]=p[regn+j];
+            p[regn_left+TDim+j]=p[regn+TDim+j];
+            p[regn_right+j]=p[regn+j];
+            p[regn_right+TDim+j]=p[regn+TDim+j];
+        }
+        p[regn_left+TDim+jb]=pMid(jb);  // Set upper-bound on first one
+        p[regn_right+jb]=pMid(jb); // Set lower-bound on second one
+
+        pfloat_pair_t resl=r_miser_indexed(p, regn_left, nptl, seed, region);
+        pfloat_pair_t resr=r_miser_indexed(p, regn_right,nptr, seed, region);
+
+        return pfloat_pair_create(
+            0.5*pfloat_pair_first(resl)+0.5*pfloat_pair_first(resr),
+            0.25*pfloat_pair_second(resl)+0.25*pfloat_pair_second(resr)
+        );
+    }
+};
+
+
+pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t &seed, uint32_t region)
+{
+    /*
+    Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
+    specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
+    region followed by ndim “upper-right” coordinates. The function is sampled a total of npts
+    times, at locations determined by the method of recursive stratified sampling. The mean value
+    of the function in the region is returned as ave; an estimate of the statistical uncertainty of ave
+    (square of standard deviation) is returned as var. The input parameter dith should normally
+    be set to zero, but can be set to (e.g.) 0.1 if func’s active region falls on the boundary of a
+    power-of-two subdivision of region.
+    */
+
+    const unsigned TDim=4;
+    const float PFAC=0.1f;
+    const int MNPT=15;
+    const int MNBS=60;
+    const float TINY=1.0e-30f;
+    const float BIG=1.0e30f;
+    //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
+    //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
+    //a subregion is further bisected only if at least MNBS function evaluations are available. We take
+    //MNBS = 4*MNPT.
+
+    // VHLS-HACK : closures cause problem?
+    #define rngu() (seed=seed*1664525+1013904223, seed)
+    #define rngf() (rngu()*0.00000000023283064365386962890625f)
+
+/*
+    auto rngu=[&]() -> uint32_t{
+        seed=seed*1664525+1013904223;
+        return seed;
+    };
+
+    auto rngf=[&]() -> float{
+        return rngu() * 0.00000000023283064365386962890625f;
+    };
+*/
+    uint32_t regn_left, regn_right;
+    uint32_t nptl, nptr;
+    float summ, summ2;
+    pfloat_pair_t resl, resr;
+
+    return run_function_old<pfloat_pair_t>(
+        IfElse([&](){ return npts < MNBS; },  // Too few points to bisect; do straight
+            Sequence(
+                [&](){
+                    summ=0.0f, summ2=0.0f; //Monte Carlo.
+                    for (unsigned n=0;n<npts;n++) {
+                        float acc=0f;
+                        for(unsigned i=0;i<TDim;i++){
+                            float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
+                            acc += x*x;
+                        }
+
+                        float fval=expf(-acc*0.5f);
+
+                        summ += fval;
+                        summ2 += fval * fval;
+                    }
+                },
+                Return([&](){ return pfloat_pair_create(
+                    summ/npts,
+                    max(TINY,(summ2-summ*summ/npts)/(npts*npts))
+                );})
+            )
+        ,   //Do the preliminary (uniform) sampling.
+            Sequence([&]{
+                //fprintf(stderr, "branch, regn=%u, npts=%u, region=%u\n", regn, npts, region);
+                assert(regn<100000);
+
+                unsigned npre=max((unsigned)(npts*PFAC),(unsigned)MNPT);
+                //fprintf(stderr, "    depth=%d, npts=%u\n", depth, npts);
+
+                auto alloci=[&](unsigned n) -> unsigned
+                {
+                    unsigned tmp=region;
+                    region+=n;
+                    return tmp;
+                };
+
+                auto alloc=[&](unsigned n) -> float *
+                {
+                    return p+alloci(n);
+                };
+
+                auto pMid=[&](unsigned j){ return (p[regn+j]+p[regn+j+TDim])/2; };
+
+
+                float *fmaxl=alloc(TDim);
+                float *fmaxr=alloc(TDim);
+                float *fminl=alloc(TDim);
+                float *fminr=alloc(TDim);
+
+                for (unsigned j=0;j<TDim;j++) { // Initialize the left and right bounds for
                     fminl[j]=fminr[j]=BIG;
                     fmaxl[j]=fmaxr[j] = -BIG;
                 }
-                for (n=0;n<npre;n++) { // Loop over the points in the sample.
-                    rng.ranpt(pt,p+regn,TDim);
-                    fval=func(pt);
-                    for (j=0;j<TDim;j++) { // Find the left and right bounds for each
-                        if (pt[j]<=p[rmid+j]) { // dimension.
+
+                unsigned jb=0;
+                float siglb, sigrb;
+
+                float summ=0;
+                for (unsigned n=0;n<npre;n++) { // Loop over the points in the sample.
+                    // VHLS-HACK : Inlined target function to get it to compile
+                    // VHLS-HACK : avoided local array for pt
+                    // VHLS-HACK : shift register through shift to avoid local array
+
+                    uint32_t splits=0; // Shift-register of whether left or right
+
+                    float acc=0;
+                    for(unsigned i=0;i<TDim;i++){
+                        float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
+                        splits = splits + (x <= pMid(i) ? (1<<i) : 0 );
+
+                        acc += x*x;
+                    }
+
+                    float fval=expf(-acc*0.5f);
+
+                    summ+=fval;
+
+                    for (unsigned j=0;j<TDim;j++) { // Find the left and right bounds for each
+                        if (splits&(1<<j)) { // dimension.
                             fminl[j]=min(fminl[j],fval);
                             fmaxl[j]=max(fmaxl[j],fval);
                         }
@@ -129,14 +361,14 @@ public:
                         }
                     }
                 }
-                sumb=BIG; //Choose which dimension jb to bisect.
-                jb=0;
-                siglb=sigrb=1.0;
-                for (j=0;j<TDim;j++) {
+
+                float sumb=BIG; //Choose which dimension jb to bisect.
+                siglb=sigrb=1.0f;
+                for (unsigned j=0;j<TDim;j++) {
                     if (fmaxl[j] > fminl[j] && fmaxr[j] > fminr[j]) {
-                        sigl=max(TINY,powf(fmaxl[j]-fminl[j],1.5f));
-                        sigr=max(TINY,powf(fmaxr[j]-fminr[j],1.5f));
-                        sum=sigl+sigr; //Equation (7.8.24), see text.
+                        float sigl=max(TINY,x_to_one_half(fmaxl[j]-fminl[j]));
+                        float sigr=max(TINY,x_to_one_half(fmaxr[j]-fminr[j]));
+                        float sum=sigl+sigr; //Equation (7.8.24), see text.
                         if (sum<=sumb)
                         {
                             sumb=sum;
@@ -146,223 +378,56 @@ public:
                         }
                     }
                 }
-            }
-            if (!jb){
-                jb=rng.NextUInt()%TDim;
-            }
-            rgl=p[regn+jb]; // Apportion the remaining points between
-            rgm=p[rmid+jb]; // left and right.
-            rgr=p[regn+TDim+jb];
-            fracl=fabs((rgm-rgl)/(rgr-rgl));
-            nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*fracl*siglb
-                /(fracl*siglb+(1.0-fracl)*sigrb)); //Equation (7.8.23).
-            nptr=npts-npre-nptl;
 
-            regn_temp=region.alloc(2*TDim); //Now allocate and integrate the two sub
-            for(j=0;j<TDim;j++) { // regions.
-                p[regn_temp+j]=p[regn+j];
-                p[regn_temp+TDim+j]=p[regn+TDim+j];
-            }
+                if (!jb){
+                    jb=rngu()%TDim;
+                }
 
-            p[regn_temp+TDim+jb]=p[rmid+jb];
-            auto resl=eval<TDim,TFunc,TRng>(func,p,regn_temp,nptl,dith,rng, region.NewRegion());
+                nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*siglb
+                    /(siglb+sigrb)); //Equation (7.8.23).
 
-            p[regn_temp+jb]=p[rmid+jb]; //Dispatch recursive call; will return back
-            p[regn_temp+TDim+jb]=p[regn+TDim+jb]; // here eventually.
-            auto resr=eval<TDim,TFunc,TRng>(func,p,regn_temp,nptr,dith,rng, region.NewRegion());
+                nptr=npts-npre-nptl;
 
-            return float_pair_t(
-                fracl*resl.first+(1-fracl)*resr.first,
-                fracl*fracl*resl.second+(1-fracl)*(1-fracl)*resr.second
-            );
-            // Combine left and right regions by equation (7.8.11) (1st line).
-        }
-    }
-}r_miser_indexed_generic;
+                // VHLS-HACK: combining region creation to avoid extra lambda step
+                regn_left=alloci(2*TDim);
+                regn_right=alloci(2*TDim);
 
+                for(unsigned j=0;j<TDim;j++) { // regions.
+                    p[regn_left+j]=p[regn+j];
+                    p[regn_left+TDim+j]=p[regn+TDim+j];
+                    p[regn_right+j]=p[regn+j];
+                    p[regn_right+TDim+j]=p[regn+TDim+j];
+                }
+                p[regn_left+TDim+jb]=pMid(jb);  // Set upper-bound on first one
+                p[regn_right+jb]=pMid(jb); // Set lower-bound on second one
+            },
+            RecurseWithResult(resl, [&](){ return make_hls_state_tuple(
+                regn_left, nptl, region);
+            })
+            ,
+            RecurseWithResult(resr, [&](){ return make_hls_state_tuple(
+                regn_right, nptr, region);
+            }),
+            Return([&](){ return pfloat_pair_create(
+                (pfloat_pair_first(resl)+pfloat_pair_first(resr))*0.5f,
+                (pfloat_pair_second(resl)+pfloat_pair_second(resr))*0.25f
+            ); })
+            )
+        ),
+        regn, npts, region,
+        resl, resr, regn_left, regn_right, nptl, nptr
+    );
 
-float_pair_t r_miser_indexed(float *p, unsigned regn, unsigned long npts, float dith,  unsigned freeStart, unsigned freeTotal)
-{
-    miser_test_config::rng_t rng;
-    RegionAllocatorI<float> region(freeStart, freeTotal);
-    return r_miser_indexed_generic.template eval<miser_test_config::N,decltype(miser_test_config::f),miser_test_config::rng_t>(miser_test_config::f, p, regn, npts, dith, rng, region);
-}
-
-class f2_miser_indexed_impl
-{
-public:
-    template<unsigned TDim, class TFunc, class TRng>
-    static float_pair_t eval(TFunc func, float *p, unsigned regn, unsigned long npts, float dith,  TRng &rng, RegionAllocatorI<float> region)
-    /*
-    Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
-    specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
-    region followed by ndim “upper-right” coordinates. The function is sampled a total of npts
-    times, at locations determined by the method of recursive stratified sampling. The mean value
-    of the function in the region is returned as ave; an estimate of the statistical uncertainty of ave
-    (square of standard deviation) is returned as var. The input parameter dith should normally
-    be set to zero, but can be set to (e.g.) 0.1 if func’s active region falls on the boundary of a
-    power-of-two subdivision of region.
-    */
-    {
-        const float PFAC=0.1f;
-        const int MNPT=15;
-        const int MNBS=60;
-        const float TINY=1.0e-30f;
-        const float BIG=1.0e30f;
-        //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
-        //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
-        //a subregion is further bisected only if at least MNBS function evaluations are available. We take
-        //MNBS = 4*MNPT.
-
-
-        unsigned regn_temp;
-
-        unsigned long n,npre,nptl,nptr;
-        int j,jb;
-
-        float fracl,fval;
-        float rgl,rgm,rgr,s,sigl,siglb,sigr,sigrb;
-        float sum,sumb,summ,summ2;
-
-        float pt[TDim];
-        unsigned rmid;
-
-        float_pair_t resl, resr;
-
-        return run_function_old<float_pair_t>(
-            IfElse([&](){ return npts < MNBS; }, // Too few points to bisect; do straight
-                Sequence(
-                    [&](){
-                        summ=summ2=0.0; //Monte Carlo.
-                        for (n=0;n<npts;n++) {
-                            rng.ranpt(pt,p+regn,TDim);
-                            //fval=func(pt);
-
-                            // VHLS-HACK : Inlined this function to get it to compile
-                            assert(TDim==4);
-                            fval = expf(-(pt[0]*pt[0]+pt[1]*pt[1]+pt[2]*pt[2]+pt[3]*pt[3])/2);
-
-                            summ += fval;
-                            summ2 += fval * fval;
-                        }
-                    },
-                    Return([&](){ return float_pair_t(
-                        summ/npts,
-                        max(TINY,(summ2-summ*summ/npts)/(npts*npts))
-                    );})
-                )
-            , //Do the preliminary (uniform) sampling.
-                //Return([&](){ return float_pair_t(0.0f,0.0f); })
-
-                Sequence(
-                    [&](){
-                        rmid=region.alloc(TDim);
-                        npre=max((unsigned)(npts*PFAC),(unsigned)MNPT);
-
-                        {
-                            float fmaxl[TDim];
-                            float fmaxr[TDim];
-                            float fminl[TDim];
-                            float fminr[TDim];
-                            for (j=0;j<TDim;j++) { // Initialize the left and right bounds for
-                                float s=rng()*dith;
-                                p[rmid+j]=(0.5+s)*p[regn+j]+(0.5-s)*p[regn+TDim+j];
-                                fminl[j]=fminr[j]=BIG;
-                                fmaxl[j]=fmaxr[j] = -BIG;
-                            }
-                            for (n=0;n<npre;n++) { // Loop over the points in the sample.
-                                rng.ranpt(pt,p+regn,TDim);
-                                //fval=func(pt);
-                                // VHLS-HACK : Inlined this function to get it to compile
-                                fval=expf(-(pt[0]*pt[0]+pt[1]*pt[1]+pt[2]*pt[2]+pt[3]*pt[3])/2);
-                                for (j=0;j<TDim;j++) { // Find the left and right bounds for each
-                                    if (pt[j]<=p[rmid+j]) { // dimension.
-                                        fminl[j]=min(fminl[j],fval);
-                                        fmaxl[j]=max(fmaxl[j],fval);
-                                    }
-                                    else {
-                                        fminr[j]=min(fminr[j],fval);
-                                        fmaxr[j]=max(fmaxr[j],fval);
-                                    }
-                                }
-                            }
-                            sumb=BIG; //Choose which dimension jb to bisect.
-                            jb=0;
-                            siglb=sigrb=1.0;
-                            for (j=0;j<TDim;j++) {
-                                if (fmaxl[j] > fminl[j] && fmaxr[j] > fminr[j]) {
-                                    // VHLS-HACK : rewrite powf(x,1.5)=sqrt(x*x*x)
-                                    //sigl=max(TINY,powf(fmaxl[j]-fminl[j],1.5f));
-                                    sigl=max(TINY,x_to_one_half(fmaxl[j]-fminl[j]));
-                                    //sigr=max(TINY,powf(fmaxr[j]-fminr[j],1.5f));
-                                    sigr=max(TINY,x_to_one_half(fmaxr[j]-fminr[j]));
-                                    sum=sigl+sigr; //Equation (7.8.24), see text.
-                                    if (sum<=sumb)
-                                    {
-                                        sumb=sum;
-                                        jb=j;
-                                        siglb=sigl;
-                                        sigrb=sigr;
-                                    }
-                                }
-                            }
-                        }
-                        if (!jb){
-                            jb=rng.NextUInt()%TDim;
-                        }
-                        rgl=p[regn+jb]; // Apportion the remaining points between
-                        rgm=p[rmid+jb]; // left and right.
-                        rgr=p[regn+TDim+jb];
-                        fracl=fabs((rgm-rgl)/(rgr-rgl));
-                        nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*fracl*siglb
-                            /(fracl*siglb+(1.0-fracl)*sigrb)); //Equation (7.8.23).
-                        nptr=npts-npre-nptl;
-
-                        regn_temp=region.alloc(2*TDim); //Now allocate and integrate the two sub
-                        for(j=0;j<TDim;j++) { // regions.
-                            p[regn_temp+j]=p[regn+j];
-                            p[regn_temp+TDim+j]=p[regn+TDim+j];
-                        }
-
-                        p[regn_temp+TDim+jb]=p[rmid+jb];
-                    },
-                    RecurseWithResult(resl,[&](){ return make_hls_state_tuple(
-                        regn_temp,nptl, region.NewRegion()
-                    );}),
-                    [&](){
-                        p[regn_temp+jb]=p[rmid+jb]; //Dispatch recursive call; will return back
-                        p[regn_temp+TDim+jb]=p[regn+TDim+jb]; // here eventually.
-                    },
-                    RecurseWithResult(resr,[&](){ return make_hls_state_tuple(
-                        regn_temp,nptr, region.NewRegion()
-                    );}),
-                    Return([&](){ return float_pair_t(
-                        fracl*resl.first+(1-fracl)*resr.first,
-                        fracl*fracl*resl.second+(1-fracl)*(1-fracl)*resr.second
-                    ); })
-                    // Combine left and right regions by equation (7.8.11) (1st line).
-                )
-            ),
-            regn, npts, region,
-            regn_temp, jb, resl, resr, fracl, nptl, nptr, rmid
-        );
-    }
-}f2_miser_indexed_generic;
-
-float_pair_t f2_miser_indexed(float *p, unsigned regn, unsigned long npts, float dith, unsigned freeStart, unsigned freeTotal)
-{
-    miser_test_config::rng_t rng;
-    RegionAllocatorI<float> region(freeStart, freeTotal);
-    return f2_miser_indexed_generic.template eval<miser_test_config::N,decltype(miser_test_config::f),miser_test_config::rng_t>(miser_test_config::f, p, regn, npts, dith, rng, region);
-}
+    #undef rngu
+    #undef rngf
+};
 
 template<class T>
 bool test_miser_indexed(T miser_indexed)
 {
     const unsigned N = miser_test_config::N;
 
-
-    float p[4096];
+    float p[16384];
 
     // Initial N*2 region
     p[0]=0;
@@ -375,17 +440,16 @@ bool test_miser_indexed(T miser_indexed)
     p[7]=4;
 
     unsigned long npts=100000;
-    float dith=0.05f;
-    float ave, var;
+
+    uint32_t seed=12345678;
 
     unsigned freeStart=N*2;
-    unsigned freeTotal=sizeof(p)-freeStart;
 
-    auto res=miser_indexed(p, 0, npts, dith,freeStart, freeTotal);
+    auto res=miser_indexed(p, 0, npts, seed, freeStart);
 
-    //printf("ave = %g, std = %g\n", res.first, sqrtf(res.second));
+    printf("ave = %g, std = %g\n", pfloat_pair_first(res), sqrtf(pfloat_pair_second(res)));
 
-    return ((0.0780804-0.001) < res.first) && ( res.first < (0.0780804+0.001));
+    return ((0.0668252-0.001) < pfloat_pair_first(res)) && ( pfloat_pair_first(res) < (0.0668252+0.001));
 }
 
 }; // hls_recurse

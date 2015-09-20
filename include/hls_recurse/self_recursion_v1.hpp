@@ -53,6 +53,13 @@ public:
     template<class TSrc>
     HLS_INLINE_STEP void SetContext(const TSrc &src)
     {
+#ifndef NDEBUG
+        /*
+        std::cerr<<"SetContext(";
+        src.dump(std::cerr);
+        std::cerr<<")\n";
+        */
+#endif
         m_state=src;
     }
 
@@ -75,10 +82,12 @@ public:
     }
 
 #ifndef __SYNTHESIS__
-    std::ostream &dump(std::ostream &dst)
+    std::ostream &dump(std::ostream &dst) const
     {
-        dst<<"Stack ptr = "<<m_stackPtr<<"\n";
-        dst<<" state    = "; m_state.dump(dst)<<"\n";
+        dst<<"Stack ptr = "<<m_stackPtr<<", ";
+        dst<<" state = ";
+        m_state.dump(dst);
+        dst<<"\n";
         return dst;
     }
 #endif
@@ -119,6 +128,12 @@ HLS_INLINE_STEP TRet run_function_old(const TImpl &body, TState &...state)
 
 	unsigned s=0;
 	run_function_old : while(1){
+        /*
+        std::cerr<<"FunFunction: Pre-step, s="<<s<<", ";
+        call_stack.dump(std::cerr);
+        std::cerr<<"\n";
+        */
+
   		if(
 			(s==length) // implicit return
 			||

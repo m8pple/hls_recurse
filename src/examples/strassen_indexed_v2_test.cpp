@@ -14,5 +14,7 @@ int main()
         fprintf(stderr, "STRASSEN_INDEXED_V2/sm failed.\n");
     }
 
+    fprintf(stderr, "Pass\n");
+
     return 0;
 };

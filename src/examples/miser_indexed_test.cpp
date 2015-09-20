@@ -8,14 +8,14 @@ using namespace hls_recurse;
 
 int main()
 {
-    
+
     uint64_t t1=time_now();
     if(!test_miser_indexed(r_miser_indexed)){
         fprintf(stderr, "MISER_INDEXED/recursive failed.\n");
     }
     uint64_t t2=time_now();
     printf("MISER_INDEXED/r : %lg s\n", time_delta(t1,t2));
-    
+
     uint64_t t3=time_now();
     if(!test_miser_indexed(f2_miser_indexed)){
         fprintf(stderr, "MISER_INDEXED/f2 failed.\n");

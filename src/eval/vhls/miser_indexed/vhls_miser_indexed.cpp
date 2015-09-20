@@ -2,11 +2,13 @@
 
 using namespace hls_recurse;
 
-float vhls_miser_indexed(float p[4096], unsigned regn, unsigned long npts, float dith,  unsigned freeStart, unsigned freeTotal)
+float vhls_miser_indexed(float p[4096], unsigned regn, unsigned long npts, unsigned freeStart)
 {
+    #pragma HLS RESOURCE core=RAM_T2P_BRAM variable=p
     #pragma HLS INTERFACE ap_memory depth=4096 port=p
 
-    return f2_miser_indexed(p, regn, npts, dith, freeStart, freeTotal).first;
+    uint32_t seed=12345678;
+    return pfloat_pair_first(f2_miser_indexed(p, regn, npts, seed, freeStart));
 }
 
 /*

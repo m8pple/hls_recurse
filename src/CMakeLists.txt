@@ -3,6 +3,12 @@ project (hls_recursion)
 
 set (CMAKE_CXX_STANDARD 11)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
+# It is common to label loops in HLS code, but it isn't
+# a problem if we don't use them.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-label")
+
 include_directories( ../include )
 
 # Creates an executable and adds it as a test.

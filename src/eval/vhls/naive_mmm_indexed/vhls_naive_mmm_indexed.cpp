@@ -3,7 +3,7 @@
 using namespace hls_recurse;
 
 // 5242880 == 1024*1024*5
-void vhls_strassen_indexed_v2(uint32_t p[5242880], unsigned log2n)
+void vhls_naive_mmm_indexed(uint32_t p[5242880], unsigned log2n)
 {
     unsigned n=1<<log2n;
     auto a=ipmatrix_create(log2n,log2n,0);
@@ -13,7 +13,7 @@ void vhls_strassen_indexed_v2(uint32_t p[5242880], unsigned log2n)
 
     #pragma HLS INTERFACE depth=5242880 port=p
 
-    f2_strassen_indexed_v2(p, dst, a, b, f);
+    mul_ipmatrix(p, dst, a, b);
 }
 
 /*int main()

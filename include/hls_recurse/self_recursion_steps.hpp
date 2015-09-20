@@ -32,6 +32,15 @@ struct generic_context_t{
         , second(_second)
     {}
 
+#ifndef __SYNTHESIS__
+    void dump(std::ostream &dst) const
+    {
+        dst<<"Ctxt<sId="<<first<<",locals=";
+        second.dump(dst);
+        dst<<">";
+    }
+
+#endif
 };
 
 
