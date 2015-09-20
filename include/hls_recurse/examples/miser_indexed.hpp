@@ -277,7 +277,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
                 [&](){
                     summ=0.0f, summ2=0.0f; //Monte Carlo.
                     for (unsigned n=0;n<npts;n++) {
-                        float acc=0f;
+                        float acc=0.0f;
                         for(unsigned i=0;i<TDim;i++){
                             float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
                             acc += x*x;

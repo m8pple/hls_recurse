@@ -1,16 +1,16 @@
-#ifndef mmm_hpp
-#define mmm_hpp
+#ifndef tiled_mmm_hpp
+#define tiled_mmm_hpp
 
 #include "hls_recurse/state_machine_self_recursion.hpp"
 
 namespace hls_recurse
 {
 
-void r_mmm(int n, int stride, float *dst, const float *a, const float *b)
+void r_tiled_mmm(int n, int stride, float *dst, const float *a, const float *b)
 {
     auto sub = [&](int v,int h) -> int
     { return v*stride*n/2+h*n/2; };
-    
+
     if( n<=16 ){
         for(int r=0; r<n; r++){
             for(int c=0; c<n; c++){
@@ -22,21 +22,21 @@ void r_mmm(int n, int stride, float *dst, const float *a, const float *b)
             }
         }
     }else{
-            
-        r_mmm(n/2, stride, dst+sub(0,0), a+sub(0,0), b+sub(0,0)); 
-        r_mmm(n/2, stride, dst+sub(0,1), a+sub(0,0), b+sub(0,1)); 
-        r_mmm(n/2, stride, dst+sub(1,0), a+sub(1,0), b+sub(0,0)); 
-        r_mmm(n/2, stride, dst+sub(1,1), a+sub(1,0), b+sub(0,1)); 
 
-        r_mmm(n/2, stride, dst+sub(0,0), a+sub(0,1), b+sub(1,0)); 
-        r_mmm(n/2, stride, dst+sub(0,1), a+sub(0,1), b+sub(1,1)); 
-        r_mmm(n/2, stride, dst+sub(1,0), a+sub(1,1), b+sub(1,0)); 
-        r_mmm(n/2, stride, dst+sub(1,1), a+sub(1,1), b+sub(1,1));
+        r_tiled_mmm(n/2, stride, dst+sub(0,0), a+sub(0,0), b+sub(0,0));
+        r_tiled_mmm(n/2, stride, dst+sub(0,1), a+sub(0,0), b+sub(0,1));
+        r_tiled_mmm(n/2, stride, dst+sub(1,0), a+sub(1,0), b+sub(0,0));
+        r_tiled_mmm(n/2, stride, dst+sub(1,1), a+sub(1,0), b+sub(0,1));
+
+        r_tiled_mmm(n/2, stride, dst+sub(0,0), a+sub(0,1), b+sub(1,0));
+        r_tiled_mmm(n/2, stride, dst+sub(0,1), a+sub(0,1), b+sub(1,1));
+        r_tiled_mmm(n/2, stride, dst+sub(1,0), a+sub(1,1), b+sub(1,0));
+        r_tiled_mmm(n/2, stride, dst+sub(1,1), a+sub(1,1), b+sub(1,1));
     }
 }
 
-class MMM
-    : public Function<MMM, void, int, int, float *, const float *, const float *>
+class tiled_mmm
+    : public Function<tiled_mmm, void, int, int, float *, const float *, const float *>
 {
 private:
     int n;
@@ -48,7 +48,7 @@ private:
     int sub(int v,int h)
     { return v*stride*n/2+h*n/2; }
 public:
-    MMM(stack_entry_t *stack)
+    tiled_mmm(stack_entry_t *stack)
         : function_base_t(*this, stack, n, stride, dst, a, b)
     {}
 
@@ -84,19 +84,19 @@ public:
     }
 };
 
-void f_mmm(int n, int stride, float *dst, const float *a, const float *b)
+void f_tiled_mmm(int n, int stride, float *dst, const float *a, const float *b)
 {
-    MMM::stack_entry_t stack[64];
-    MMM mmm(stack);
-    mmm(n,stride,dst,a,b);
+    tiled_mmm::stack_entry_t stack[64];
+    tiled_mmm tiled_mmm(stack);
+    tiled_mmm(n,stride,dst,a,b);
 }
 
 
-void f2_mmm(int n, int stride, float *dst, const float *a, const float *b)
+void f2_tiled_mmm(int n, int stride, float *dst, const float *a, const float *b)
 {
     auto sub = [&](int v,int h) -> int
     { return v*stride*n/2+h*n/2; };
-    
+
     run_function_old<void>(
         IfElse([&](){ return n<=16; },
             [&](){
@@ -122,12 +122,12 @@ void f2_mmm(int n, int stride, float *dst, const float *a, const float *b)
                 Recurse([&](){ return make_hls_state_tuple(n/2, stride, dst+sub(1,1), a+sub(1,1), b+sub(1,1)); })
             )
         ),
-        n, stride, dst, a, b      
+        n, stride, dst, a, b
     );
 }
 
 template<class T>
-bool test_mmm(T mmm)
+bool test_tiled_mmm(T tiled_mmm)
 {
     const unsigned n=128;
     float a[n*n], b[n*n], got[n*n], ref[n*n];
@@ -144,7 +144,7 @@ bool test_mmm(T mmm)
         ref[i]=0;
     }
 
-    mmm(n, n, got, a, b);
+    tiled_mmm(n, n, got, a, b);
 
     for(unsigned r=0; r<n; r++){
         for(unsigned c=0; c<n; c++){
