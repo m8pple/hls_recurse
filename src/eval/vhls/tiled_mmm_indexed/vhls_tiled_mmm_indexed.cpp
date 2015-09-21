@@ -2,16 +2,12 @@
 
 using namespace hls_recurse;
 
-void vhls_tiled_mmm_indexed(int n, int stride, element_t dst[8192], const element_t a[8192], const element_t b[8192])
+// 1024*1024*3 = 3145728
+void vhls_tiled_mmm_indexed(int log2n, element_t p[3145728])
 {
-    #pragma HLS INTERFACE ap_memory depth=4096 port=a
-    #pragma HLS INTERFACE ap_memory depth=4096 port=b
-    #pragma HLS INTERFACE ap_memory depth=4096 port=dst
+    #pragma HLS INTERFACE ap_memory depth=3145728 port=p
 
-    f2_tiled_mmm_indexed(n, stride, dst, a, b);
+    unsigned n=1<<log2n;
+
+    f2_tiled_mmm_indexed(n, n, p, p+n, p+2*n);
 }
-
-int main()
-{
-    return test_tiled_mmm_indexed(vhls_tiled_mmm_indexed);
-};

@@ -1,6 +1,7 @@
 add_executable_test(examples ackerman)
 add_executable_test(examples fft)
 add_executable_test(examples tiled_mmm)
+add_executable_test(examples tiled_mmm_indexed)
 add_executable_test(examples miser)
 add_executable_test(examples miser_indexed)
 add_executable_test(examples strassen)
