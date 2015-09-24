@@ -27,6 +27,13 @@ add_custom_command(OUTPUT ${DESIGN_NAME}/build/synth/${DESIGN_NAME}/sim/syn/vhdl
     COMMAND ${VIVADO_HLS}/bin/vivado_hls  -f ../../synthesise.tcl
 )
 
+add_custom_command(
+    OUTPUT ${DESIGN_NAME}/${DESIGN_NAME}_vhls.zip
+    DEPENDS ${DESIGN_NAME}/build/synth/${DESIGN_NAME}/sim/syn/vhdl/vhls_${DESIGN_NAME}.vhd
+    WORKING_DIRECTORY ${DESIGN_NAME}/build/synth/${DESIGN_NAME}/sim/syn/vhdl
+    COMMAND zip ../../../../../../${DESIGN_NAME}_vhls.zip *.*
+)
+
 add_custom_target(eval_vhls_${DESIGN_NAME}_synth
     DEPENDS ${DESIGN_NAME}/synthesise.tcl
     DEPENDS ${DESIGN_NAME}/build/synth/${DESIGN_NAME}/sim/syn/vhdl/vhls_${DESIGN_NAME}.vhd
@@ -57,6 +64,53 @@ add_custom_target(eval_vhls_${DESIGN_NAME}_sim
     DEPENDS ${DESIGN_NAME}/simulate.tcl
     DEPENDS ${DESIGN_NAME}/simulate.log
 )
+
+
+add_custom_command(OUTPUT ${DESIGN_NAME}/implement.tcl
+    DEPENDS gen_implement_tcl.sh
+    DEPENDS eval_vhls_${DESIGN_NAME}_synth
+    WORKING_DIRECTORY .
+    COMMAND mkdir -p ${DESIGN_NAME}/build/impl
+    COMMAND echo "Making implement.tcl"
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_implement_tcl.sh ${DESIGN_NAME} ${HLS_RECURSE_SOURCE_DIR} . > ${DESIGN_NAME}/implement.tcl
+)
+
+add_custom_command(
+    OUTPUT ${DESIGN_NAME}/implement.log
+    OUTPUT ${DESIGN_NAME}/synth_utilisation.txt
+    OUTPUT ${DESIGN_NAME}/opt_utilisation.txt
+    OUTPUT ${DESIGN_NAME}/impl_utilisation.txt
+    OUTPUT ${DESIGN_NAME}/impl_timing.txt
+    OUTPUT ${DESIGN_NAME}/impl_checkpoint.dcp
+    DEPENDS ${DESIGN_NAME}/implement.tcl
+    DEPENDS eval_vhls_${DESIGN_NAME}_synth
+    WORKING_DIRECTORY ${DESIGN_NAME}/build/impl
+    COMMAND ls ../..
+    COMMAND ${VIVADO_ROOT}/bin/vivado -mode batch -source ../../implement.tcl | tee ../../implement.log
+)
+
+add_custom_target(eval_vhls_${DESIGN_NAME}_impl
+    DEPENDS ${DESIGN_NAME}/implement.tcl
+    DEPENDS ${DESIGN_NAME}/implement.log
+)
+
+add_custom_command(
+    OUTPUT ${DESIGN_NAME}/${DESIGN_NAME}_results.zip
+    DEPENDS ${DESIGN_NAME}/${DESIGN_NAME}_vhls.zip
+    DEPENDS ${DESIGN_NAME}/implement.log
+    DEPENDS ${DESIGN_NAME}/synth_utilisation.txt
+    DEPENDS ${DESIGN_NAME}/opt_utilisation.txt
+    DEPENDS ${DESIGN_NAME}/impl_utilisation.txt
+    DEPENDS ${DESIGN_NAME}/impl_timing.txt
+    DEPENDS ${DESIGN_NAME}/impl_checkpoint.dcp
+    WORKING_DIRECTORY ${DESIGN_NAME}
+    COMMAND zip ${DESIGN_NAME}_results.zip *.txt *.log *.dcp *_vhls.zip
+)
+
+add_custom_target(eval_vhls_${DESIGN_NAME}
+    DEPENDS ${DESIGN_NAME}/${DESIGN_NAME}_results.zip
+)
+
 
 endfunction(add_vivado_hls_core)
 
