@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 2.8.12)
 project (hls_recursion)
 
 set (CMAKE_CXX_STANDARD 11)
@@ -19,8 +19,13 @@ endfunction(add_executable_test)
 
 enable_testing()
 
+if(IS_DIRECTORY /home/legup/legup-4.0/llvm)
+    add_subdirectory(llvm)
+endif(IS_DIRECTORY /home/legup/legup-4.0/llvm)
+
 add_subdirectory(examples)
 add_subdirectory(core)
 add_subdirectory(mutual)
 add_subdirectory(eval)
+
 

@@ -10,6 +10,7 @@ set(VIVADO_ROOT /cygdrive/C/Usr/Xilinx2015.2/Vivado/2015.2
 file(RELATIVE_PATH HLS_RECURSE_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(eval_vhls_synth)
+add_custom_target(eval_vhls)
 
 function(add_vivado_hls_core DESIGN_NAME)
 
@@ -111,6 +112,8 @@ add_custom_target(eval_vhls_${DESIGN_NAME}
     DEPENDS ${DESIGN_NAME}/${DESIGN_NAME}_results.zip
 )
 
+add_dependencies(eval_vhls eval_vhls_${DESIGN_NAME})
+
 
 endfunction(add_vivado_hls_core)
 
@@ -121,7 +124,6 @@ add_vivado_hls_core(fft_indexed)
 add_vivado_hls_core(ackerman)
 add_vivado_hls_core(tiled_mmm_indexed)
 add_vivado_hls_core(sort_indexed)
-add_vivado_hls_core(strassen_indexed)
 add_vivado_hls_core(strassen_indexed_v2)
 add_vivado_hls_core(naive_mmm_indexed)
 add_vivado_hls_core(miser_indexed)

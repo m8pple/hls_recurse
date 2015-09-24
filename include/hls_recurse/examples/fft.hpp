@@ -21,7 +21,7 @@ void r_fft_aux(int n, complex_t wn, const complex_t *pIn, int sIn, complex_t *pO
         n=n/2;
         r_fft_aux(n,wn*wn,pIn,2*sIn,pOut,sOut);
         r_fft_aux(n,wn*wn,pIn+sIn,2*sIn,pOut+sOut*n,sOut);
-        
+
         complex_t w=complex_t::from_int(1);
         for (int j=0;j<n;j++){
             complex_t t1 = w*pOut[n+j];
@@ -58,7 +58,7 @@ void r_fft(int log2n, const complex_t *pIn, complex_t *pOut)
     complex_t wn=wn_table[log2n];
     int sIn=1;
     int sOut=1;
-    
+
     r_fft_aux(n, wn, pIn, sIn, pOut, sOut);
 }
 
@@ -169,7 +169,7 @@ void f2_fft(int log2n, const complex_t *pIn, complex_t *pOut)
     complex_t wn=wn_table[log2n];
     int sIn=1;
     int sOut=1;
-    
+
     run_function_old<void>(
         IfElse([&](){ return n<=2; },
             [&](){
@@ -239,7 +239,7 @@ bool test_fft(T fft)
           err=-err;
       }
       int milliErr=int(err*1000);
-      //printf("%d : got = %d + i %d, ref= %d + i ?,  err=%d/1000 \n", i, out[i].re_int(), out[i].im_int(), expectedRe, milliErr);
+      printf("%d : got = %d + i %d, ref= %d + i ?,  err=%d/1000 \n", i, out[i].re_int(), out[i].im_int(), expectedRe, milliErr);
       if( err > 0.05){
           return false;
       }

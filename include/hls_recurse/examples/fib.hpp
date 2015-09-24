@@ -15,7 +15,7 @@ uint32_t r_fib(uint32_t n)
         return r_fib(n-1)+r_fib(n-2);
     }
 }
-    
+
 
 class Fib
     : public Function<Fib,uint32_t, uint32_t,uint32_t,uint32_t>
@@ -57,7 +57,7 @@ uint32_t f_fib(uint32_t n)
 uint32_t f2_fib(uint32_t n)
 {
     uint32_t f_n_1, f_n_2;
-    
+
     return run_function_old<uint32_t>(
         IfElse([&](){ return n<=2; },
             Return([](){ return 1; }),
@@ -80,7 +80,7 @@ bool test_fib(T fib)
     int failed=0;
     for(unsigned i=1; i<nRef; i++){
         uint32_t got=fib(i);
-        //printf("got=%u\n", got);
+        printf("got=%u\n", got);
         if(got!=aRef[i]){
             failed++;
         }

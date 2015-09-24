@@ -1,0 +1,17 @@
+--- GenerateRTL.cpp	2015-07-26 12:56:54.366602877 -0400
++++ /media/sf_hls_recursion/src/eval/legup/GenerateRTL.cpp	2015-09-24 18:02:20.574355400 -0400
+@@ -6587,9 +6587,14 @@
+ 		std::string fileName = "dfg." + getLabel(Fp) + "_" + getLabel(bb)
+ 				+ ".dot";
+           raw_fd_ostream dfgFile(fileName.c_str(), FileError, llvm::sys::fs::F_None);
++	  if(!FileError.empty()){
++	    errs()<<"Couldn't open dot file, skipping "<<fileName<<" : "<<FileError<<"\n";
++	  }else{
++	    errs()<<"Couldn't open dot file "<<fileName<<" : "<<FileError<<"\n";
+ 		assert(FileError.empty() && "Error opening dot files");
+ 		formatted_raw_ostream out(dfgFile);
+ 		dag.printDFGDot(out, bb);
++	  }
+ 	}
+ }
+ 
