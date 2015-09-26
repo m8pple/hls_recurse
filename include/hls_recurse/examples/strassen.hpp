@@ -254,7 +254,7 @@ void f2_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_re
     matrix_t dst=_dst, a=_a, b=_b;
     matrix_t M1, M2, M3, M4, M5, M6, M7;
     matrix_t tmp1, tmp2;
-    
+
     run_function_old<void>(
         Sequence(
             If([&](){ return dst.n <= 16; },
@@ -323,77 +323,89 @@ void iter_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_
 uint32_t strassen_globalMem[1<<20];
 
 template<class TImpl>
-bool test_strassen(TImpl strassen)
+bool test_strassen(TImpl strassen, bool logEvents=false)
 {
+    bool ok=true;
+
+    for(unsigned n=2; n<=512; n*=2){
 
     free_region_t hFree=strassen_globalMem;
 
-    const unsigned n=128;
-    
-    matrix_t a=alloc_matrix(hFree, n);
-    matrix_t b=alloc_matrix(hFree, n);
-    matrix_t got=alloc_matrix(hFree, n);
-    matrix_t ref=alloc_matrix(hFree, n);
+        matrix_t a=alloc_matrix(hFree, n);
+        matrix_t b=alloc_matrix(hFree, n);
+        matrix_t got=alloc_matrix(hFree, n);
+        matrix_t ref=alloc_matrix(hFree, n);
 
-    uint32_t f_rand=1;
+        uint32_t f_rand=1;
 
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            set(a,r,c,f_rand);
-            f_rand=f_rand+1;
-            set(b,r,c,-f_rand);
-            f_rand=f_rand+2;
+        for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                set(a,r,c,f_rand);
+                f_rand=f_rand+1;
+                set(b,r,c,-f_rand);
+                f_rand=f_rand+2;
+            }
         }
-    }
 
-    /*
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            printf(" %u", get(a,r,c));
-        }
-        printf("\n");
-    }
-    printf("\n");
-
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            printf(" %u", get(b,r,c));
+        /*
+        for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                printf(" %u", get(a,r,c));
+            }
+            printf("\n");
         }
         printf("\n");
-    }
-    */
 
-
-
-    //printf("Begin standard mul...\n");
-    mul_matrix(ref, a, b);
-    //printf("Begin strassen mul...\n");
-    strassen(got, a, b, hFree);
-
-    /*for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            printf(" %u", get(ref,r,c));
+        for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                printf(" %u", get(b,r,c));
+            }
+            printf("\n");
         }
-        printf("\n");
-    }*/
+        */
 
-    /*for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            printf(" %u", get(got,r,c));
+
+
+        if(n<=128){
+            //printf("Begin standard mul...\n");
+            mul_matrix(ref, a, b);
         }
-        printf("\n");
-    }*/
+        //printf("Begin strassen mul...\n");
+        if(logEvents){
+            printf("strassen, n=%u, start\n", n);
+        }
+        strassen(got, a, b, hFree);
+        if(logEvents){
+            printf("strassen, n=%u, start\n", n);
+        }
 
-    //printf("Begin check...\n");
-    bool ok=true;
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            uint32_t rr=get(ref,r,c);
-            uint32_t gg=get(got,r,c);
-            //printf("%d, %d : %g ref=%g\n", r,c, gg, rr);
-            if( rr!=gg ){
-                //printf("  fail\n");
-                ok=false;
+
+        /*for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                printf(" %u", get(ref,r,c));
+            }
+            printf("\n");
+        }*/
+
+        /*for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                printf(" %u", get(got,r,c));
+            }
+            printf("\n");
+        }*/
+
+        //printf("Begin check...\n");
+        if(n<=128){
+            for(unsigned r=0;r<n;r++){
+                for(unsigned c=0;c<n;c++){
+                    uint32_t rr=get(ref,r,c);
+                    uint32_t gg=get(got,r,c);
+                    //printf("%d, %d : %g ref=%g\n", r,c, gg, rr);
+                    if( rr!=gg ){
+                        //printf("  fail\n");
+                        ok=false;
+                    }
+                }
             }
         }
     }

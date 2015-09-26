@@ -109,20 +109,32 @@ void f3_sum_indexed(uint32_t _index, uint32_t _n)
 
 
 template<class T>
-bool test_sum_indexed(T sum_indexed)
+bool test_sum_indexed(T sum_indexed, bool logEvents=false)
 {
-    const uint32_t n=100;
-    int32_t x[n];
+    int32_t x[4096];
 
-    int32_t fx=0;
-    for(unsigned i=0;i<n;i++){
-        x[i]=fx;
-        fx=fx+1;
+    bool ok=true;
+
+    for(unsigned n=2; n<=4096; n*=2){
+
+        int32_t fx=0;
+        for(unsigned i=0;i<n;i++){
+            x[i]=fx;
+            fx=fx+1;
+        }
+
+        if(logEvents){
+            printf("sum, n=%u, start\n", n);
+        }
+        sum_indexed(n,x);
+        if(logEvents){
+            printf("sum, n=%u, start\n", n);
+        }
+
+        ok = ok && ( x[0]==n*(n-1)/2 );
     }
 
-    sum_indexed(n,x);
-
-    return x[0]==n*(n-1)/2;
+    return ok;
 }
 
 }; // namespace hls_recurse

@@ -91,43 +91,50 @@ void f2_tiled_mmm_indexed(int n, int stride, element_t *dst, const element_t *a,
 
 
 template<class T>
-bool test_tiled_mmm_indexed(T tiled_mmm_indexed)
+bool test_tiled_mmm_indexed(T tiled_mmm_indexed, bool logEvents=false)
 {
-    const unsigned n=128;
-    element_t a[n*n], b[n*n], got[n*n], ref[n*n];
+    bool ok=true;
 
-    element_t f_rand=1;
+    const unsigned MN=512;
+    float a[512*512], b[512*512], got[512*512], ref[512*512];
 
-    for(unsigned i=0;i<n*n;i++){
-        // Keep the values small so that it is exact
-        a[i]=f_rand;
-        f_rand=f_rand+2;
-        b[i]=f_rand;
-        f_rand=f_rand+7;
-        got[i]=0;
-        ref[i]=0;
-        if(f_rand>100){
-            f_rand-=97;
+    for(int n=2;n<=MN;n*=2){
+
+        float f_rand=1;
+
+        for(unsigned i=0;i<n*n;i++){
+            // Keep the values small so that it is exact
+            a[i]=f_rand;
+            f_rand=f_rand+1;
+            b[i]=f_rand;
+            f_rand=f_rand+1;
+            got[i]=0;
+            ref[i]=0;
         }
-    }
 
-    tiled_mmm_indexed(n, n, got, a, b);
+        if(logEvents){
+            printf("tiled_mmm_indexed, n=%u, start\n", n);
+        }
+        tiled_mmm_indexed(n, n, got, a, b);
+        if(logEvents){
+            printf("tiled_mmm_indexed, n=%u, finish\n", n);
+        }
 
-    for(unsigned r=0; r<n; r++){
-        for(unsigned c=0; c<n; c++){
-            element_t acc=0;
-            for(unsigned i=0; i<n; i++){
-                acc += a[r*n+i] * b[i*n+c];
+        if(n<=128){
+            for(unsigned r=0; r<n; r++){
+                for(unsigned c=0; c<n; c++){
+                    float acc=0;
+                    for(unsigned i=0; i<n; i++){
+                        acc += a[r*n+i] * b[i*n+c];
+                    }
+                    ref[r*n+c]=acc;
+                }
             }
-            ref[r*n+c]=acc;
-        }
-    }
 
-    for(unsigned r=0; r<n; r++){
-        for(unsigned c=0; c<n; c++){
-            if(ref[r*n+c]!=got[r*n+c]){
-                fprintf(stderr, "got[%u,%u]=%f, ref[%u,%u]=%f\n", r,c,got[r*n+c], r,c,ref[r*n+c]);
-                return false;
+            for(unsigned i=0; i<n*n; i++){
+                if(ref[i]!=got[i]){
+                    ok=false;
+                }
             }
         }
     }

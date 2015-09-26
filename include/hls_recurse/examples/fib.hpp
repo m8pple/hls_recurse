@@ -72,15 +72,20 @@ uint32_t f2_fib(uint32_t n)
 }
 
 template<class T>
-bool test_fib(T fib)
+bool test_fib(T fib, bool logEvents=false)
 {
     uint32_t aRef[]={0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584};
     uint32_t nRef=sizeof(aRef)/sizeof(aRef[0]);
 
     int failed=0;
     for(unsigned i=1; i<nRef; i++){
+        if(logEvents){
+            printf("fib, n=%u, start\n", i);
+        }
         uint32_t got=fib(i);
-        printf("got=%u\n", got);
+        if(logEvents){
+            printf("fib, n=%u, finish\n", i);
+        }
         if(got!=aRef[i]){
             failed++;
         }

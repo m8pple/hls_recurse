@@ -81,7 +81,7 @@ uint32_t f2_ackerman(uint32_t _m, uint32_t _n)
 }
 
 template<class T>
-bool test_ackerman(T ackerman)
+bool test_ackerman(T ackerman, bool logEvents=false)
 {
     struct{
         int m;
@@ -120,7 +120,13 @@ bool test_ackerman(T ackerman)
         int m=aTests[i].m;
         int ref=aTests[i].ref;
 
+        if(logEvents){
+            printf("ackerman, n=%u, start\n", i);
+        }
         int got=ackerman(m,n);
+        if(logEvents){
+            printf("ackerman, n=%u, finish\n", i);
+        }
         //printf("ack(%d,%d)=%d, got=%d\n", m,n,ref, got);
         if(got!=ref){
             //printf("FAIL : ack(%d,%d)=%d, got=%d\n", m,n,ref, got);

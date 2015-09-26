@@ -127,38 +127,51 @@ void f2_tiled_mmm(int n, int stride, float *dst, const float *a, const float *b)
 }
 
 template<class T>
-bool test_tiled_mmm(T tiled_mmm)
+bool test_tiled_mmm(T tiled_mmm, bool logEvents=false)
 {
-    const unsigned n=128;
-    float a[n*n], b[n*n], got[n*n], ref[n*n];
+    bool ok=true;
 
-    float f_rand=1;
+    const unsigned MN=512;
+    float a[512*512], b[512*512], got[512*512], ref[512*512];
 
-    for(unsigned i=0;i<n*n;i++){
-        // Keep the values small so that it is exact
-        a[i]=f_rand;
-        f_rand=f_rand+1;
-        b[i]=f_rand;
-        f_rand=f_rand+1;
-        got[i]=0;
-        ref[i]=0;
-    }
+    for(int n=2;n<=MN;n*=2){
 
-    tiled_mmm(n, n, got, a, b);
+        float f_rand=1;
 
-    for(unsigned r=0; r<n; r++){
-        for(unsigned c=0; c<n; c++){
-            float acc=0;
-            for(unsigned i=0; i<n; i++){
-                acc += a[r*n+i] * b[i*n+c];
-            }
-            ref[r*n+c]=acc;
+        for(unsigned i=0;i<n*n;i++){
+            // Keep the values small so that it is exact
+            a[i]=f_rand;
+            f_rand=f_rand+1;
+            b[i]=f_rand;
+            f_rand=f_rand+1;
+            got[i]=0;
+            ref[i]=0;
         }
-    }
 
-    for(unsigned i=0; i<n*n; i++){
-        if(ref[i]!=got[i]){
-            return false;
+        if(logEvents){
+            printf("tiled_mmm, n=%u, start\n", n);
+        }
+        tiled_mmm(n, n, got, a, b);
+        if(logEvents){
+            printf("tiled_mmm, n=%u, finish\n", n);
+        }
+
+        if(n<=128){
+            for(unsigned r=0; r<n; r++){
+                for(unsigned c=0; c<n; c++){
+                    float acc=0;
+                    for(unsigned i=0; i<n; i++){
+                        acc += a[r*n+i] * b[i*n+c];
+                    }
+                    ref[r*n+c]=acc;
+                }
+            }
+
+            for(unsigned i=0; i<n*n; i++){
+                if(ref[i]!=got[i]){
+                    ok=false;
+                }
+            }
         }
     }
 

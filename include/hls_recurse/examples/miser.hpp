@@ -60,7 +60,10 @@ public:
 
     HLS_INLINE_STEP float operator()()
     {
-        return NextUInt()*0.00000000023283064365386962890625f;
+        // LEGUP-HACK : avoid unsigned->float
+        int tmp=NextUInt()&0x7FFFFFFFul;
+        //return NextUInt()*0.00000000023283064365386962890625f;
+        return tmp*0.0000000004656612873077392578125f;
     }
 
 
@@ -300,7 +303,7 @@ class f2_miser_impl
 {
 public:
     template<unsigned TDim, class TFunc, class TRng>
-    static float_pair_t eval(TFunc func, float regn[2*TDim], unsigned long npts, float dith, TRng &rng, RegionAllocator<float> region)
+    static float_pair_t eval(TFunc func, float regn[2*TDim], int npts, float dith, TRng &rng, RegionAllocator<float> region)
 
     //Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
     //specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
@@ -324,8 +327,8 @@ public:
 
         float *regn_temp;
 
-        unsigned long n,npre,nptl,nptr;
-        unsigned j,jb;
+        int long n,npre,nptl,nptr;
+        int j,jb;
 
         float fracl,fval;
         float rgl,rgm,rgr,sigl,siglb,sigr,sigrb;
@@ -357,7 +360,8 @@ public:
                 Sequence(
                     [&](){
                         rmid=region.alloc(TDim);
-                        npre=max((unsigned)(npts*PFAC),(unsigned)MNPT);
+                        // LEGUP-HACK : Convert from unsigned to int
+                        npre=max((int)(npts*PFAC),(int)MNPT);
 
                         {
                             float fmaxl[TDim];
@@ -409,7 +413,8 @@ public:
                         rgm=rmid[jb]; // left and right.
                         rgr=regn[TDim+jb];
                         fracl=fabs((rgm-rgl)/(rgr-rgl));
-                        nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*fracl*siglb
+                        // LEGUP-HACK : remove float->unsigned
+                        nptl=(int)(MNPT+(npts-npre-2*MNPT)*fracl*siglb
                             /(fracl*siglb+(1.0-fracl)*sigrb)); //Equation (7.8.23).
                         nptr=npts-npre-nptl;
 
@@ -454,24 +459,38 @@ float_pair_t f2_miser(float regn[2*miser_test_config::N], unsigned long npts, fl
 }
 
 template<class T>
-bool test_miser(T miser)
+bool test_miser(T miser, bool logEvents=false)
 {
+    bool ok=true;
+
     float globalMem[4096];
 
     const unsigned N = miser_test_config::N;
 
     float regn[2*N]={0,0,0,0, 1,2,3,4};
 
-    unsigned long npts=100000;
-    float dith=0.05f;
-    XorShift128 rng;
-    RegionAllocator<float> region(globalMem, sizeof(globalMem)/sizeof(globalMem[0]));
+    // LEGUP-HACK : converted from unsigned->int to avoid unsigned->float
+    for(int npts=2; npts<=(1<<18); npts*=2){
 
-    auto res=miser(regn, npts, dith, rng, region);
+        float dith=0.05f;
+        XorShift128 rng;
+        RegionAllocator<float> region(globalMem, sizeof(globalMem)/sizeof(globalMem[0]));
 
-    //printf("ave = %g, std = %g\n", res.first, sqrtf(res.second));
+        if(logEvents){
+            printf("miser, n=%u, start\n", npts);
+        }
+        auto res=miser(regn, npts, dith, rng, region);
+        if(logEvents){
+            printf("miser, n=%u, start\n", npts);
+        }
 
-    return ((0.0780804-0.001) < res.first) && ( res.first < (0.0780804+0.001));
+        //printf("ave = %g, std = %g\n", res.first, sqrtf(res.second));
+
+        if(npts >= 32768 ){
+            ok=ok && ( ((0.0780804-0.001) < res.first) && ( res.first < (0.0780804+0.001)));
+        }
+    }
+    return ok;
 }
 
 }; // hls_recurse

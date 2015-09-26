@@ -7,12 +7,12 @@
 namespace hls_recurse
 {
 
-void r_sort(float *a, int n)
+void r_sort(uint32_t *a, int n)
 {
     int split=0;
-    
+
     if( n < 32 ){
-            
+
         // From Rosetta Code
         // http://rosettacode.org/wiki/Sorting_algorithms/Insertion_sort#C
         /*fprintf(stderr, "n=%d\n", n);
@@ -21,7 +21,7 @@ void r_sort(float *a, int n)
         }
         fprintf(stderr, "\n");*/
         int i, j;
-        float t;
+        uint32_t t;
         for (i = 1; i < n; i++) {
             t = a[i];
             for (j = i; j > 0 && t < a[j - 1]; j--) {
@@ -37,7 +37,7 @@ void r_sort(float *a, int n)
        // fprintf(stderr, "n=%d  ''\n", n);
         // This is taken from Rosetta Code
         // http://rosettacode.org/wiki/Sorting_algorithms/Quicksort#C
-        float pivot=a[n/2];
+        uint32_t pivot=a[n/2];
         int i,j;
         for(i=0, j=n-1;; i++, j--){
             while(a[i]<pivot)
@@ -46,7 +46,7 @@ void r_sort(float *a, int n)
                 j--;
             if(i>=j)
                 break;
-            float tmp=a[i];
+            uint32_t tmp=a[i];
             a[i]=a[j];
             a[j]=tmp;
         }
@@ -57,10 +57,10 @@ void r_sort(float *a, int n)
 }
 
 class Sort
-    : public Function<Sort, void, float*, int, int>
+    : public Function<Sort, void, uint32_t*, int, int>
 {
 private:
-    float *a;
+    uint32_t *a;
     int n;
     int split;
 public:
@@ -77,7 +77,7 @@ public:
                     // From Rosetta Code
                     // http://rosettacode.org/wiki/Sorting_algorithms/Insertion_sort#C
                     int i, j;
-                    float t;
+                    uint32_t t;
                     for (i = 1; i < n; i++) {
                         t = a[i];
                         for (j = i; j > 0 && t < a[j - 1]; j--) {
@@ -90,7 +90,7 @@ public:
                     [&](){
                         // This is taken from Rosetta Code
                         // http://rosettacode.org/wiki/Sorting_algorithms/Quicksort#C
-                        float pivot=a[n/2];
+                        uint32_t pivot=a[n/2];
                         int i,j;
                         for(i=0, j=n-1;; i++, j--){
                             while(a[i]<pivot)
@@ -99,7 +99,7 @@ public:
                                 j--;
                             if(i>=j)
                                 break;
-                            float tmp=a[i];
+                            uint32_t tmp=a[i];
                             a[i]=a[j];
                             a[j]=tmp;
                         }
@@ -113,18 +113,18 @@ public:
     }
 };
 
-void f_sort(float *a, int n)
+void f_sort(uint32_t *a, int n)
 {
     Sort::stack_entry_t stack[1024];
     Sort sort(stack);
-    
+
     sort(a,n,0);
 }
 
-void f2_sort(float *a, int n)
+void f2_sort(uint32_t *a, int n)
 {
     int split=0;
-    
+
     run_function_old<void>(
         IfElse([&](){ return n < 32; },
             [&]{
@@ -136,7 +136,7 @@ void f2_sort(float *a, int n)
                 }
                 fprintf(stderr, "\n");*/
                 int i, j;
-                float t;
+                uint32_t t;
                 for (i = 1; i < n; i++) {
                     t = a[i];
                     for (j = i; j > 0 && t < a[j - 1]; j--) {
@@ -154,7 +154,7 @@ void f2_sort(float *a, int n)
                    // fprintf(stderr, "n=%d  ''\n", n);
                     // This is taken from Rosetta Code
                     // http://rosettacode.org/wiki/Sorting_algorithms/Quicksort#C
-                    float pivot=a[n/2];
+                    uint32_t pivot=a[n/2];
                     int i,j;
                     for(i=0, j=n-1;; i++, j--){
                         while(a[i]<pivot)
@@ -163,7 +163,7 @@ void f2_sort(float *a, int n)
                             j--;
                         if(i>=j)
                             break;
-                        float tmp=a[i];
+                        uint32_t tmp=a[i];
                         a[i]=a[j];
                         a[j]=tmp;
                     }
@@ -178,29 +178,35 @@ void f2_sort(float *a, int n)
 }
 
 template<class T>
-bool test_sort(T sort)
+bool test_sort(T sort, bool logEvents=false)
 {
-    const uint32_t n=1024;
-    float x[n];
+    uint32_t x[8192];
 
-    float f_rand=1;
+    for(uint32_t n=2; n<=8192; n*=2){
 
-    for(int i=0;i<n;i++){
-        x[i]=f_rand;
-        f_rand=f_rand+17;
-        if(f_rand>33){
-            f_rand-=33;
+
+        uint32_t f_rand=1;
+
+        for(int i=0;i<n;i++){
+            x[i]=f_rand;
+            f_rand=f_rand+7;
+            if(f_rand>1000){
+                f_rand-=501;
+            }
         }
-       //printf("%03d : %.8f\n", i, x[i]);
-    }
 
-    sort(x,n);
+        if(logEvents){
+            printf("sort, n=%u, start\n", n);
+        }
+        sort(x,n);
+        if(logEvents){
+            printf("sort, n=%u, finish\n", n);
+        }
 
-    //printf("%03d : %.8f\n", 0, x[0]);
-    for(int i=1; i<n; i++){
-        //printf("%03d : %.8f\n", i, x[i]);
-        if(x[i-1] > x[i])
-            return false;
+        for(int i=1; i<n; i++){
+            if(x[i-1] > x[i])
+                return false;
+        }
     }
 
     return true;

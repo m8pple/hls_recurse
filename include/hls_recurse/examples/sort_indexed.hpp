@@ -56,27 +56,43 @@ void f2_sort_indexed(uint32_t *a, int n)
 }
 
 template<class T>
-bool test_sort_indexed(T sort)
+bool test_sort_indexed(T sort_indexed, bool logEvents=false)
 {
-    const uint32_t n=1024;
-    uint32_t x[n];
+    uint32_t x[8192];
 
-    uint32_t f_rand=1;
+    for(uint32_t n=2; n<=8192; n*=2){
 
-    for(int i=0;i<n;i++){
-        x[i]=f_rand;
-        f_rand=f_rand*1664525+1013904223;
-    }
 
-    sort(x,n);
+        uint32_t f_rand=1;
 
-    for(int i=1; i<n; i++){
-        if(x[i-1] > x[i])
-            return false;
+        for(int i=0;i<n;i++){
+            x[i]=f_rand;
+            f_rand=f_rand+17;
+            if(f_rand>33){
+                f_rand-=33;
+            }
+           //printf("%03d : %.8f\n", i, x[i]);
+        }
+
+        if(logEvents){
+            printf("sort_indexed, n=%u, start\n", n);
+        }
+        sort_indexed(x,n);
+        if(logEvents){
+            printf("sort_indexed, n=%u, finish\n", n);
+        }
+
+        //printf("%03d : %.8f\n", 0, x[0]);
+        for(int i=1; i<n; i++){
+            //printf("%03d : %.8f\n", i, x[i]);
+            if(x[i-1] > x[i])
+                return false;
+        }
     }
 
     return true;
 }
+
 
 }; // hls_recurse
 

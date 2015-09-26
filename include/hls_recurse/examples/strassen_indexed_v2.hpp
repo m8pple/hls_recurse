@@ -330,79 +330,78 @@ void f2_strassen_indexed_v2(uint32_t *p, ipmatrix_t dst, ipmatrix_t a, ipmatrix_
 uint32_t iglobalMem[1<<20];
 
 template<class TImpl>
-bool test_strassen_indexed_v2(TImpl strassen_indexed_v2)
+bool test_strassen_indexed_v2(TImpl strassen_indexed_v2,bool logEvents=false)
 {
-
-    ipfree_region_t hFree=0;
-    uint32_t *p=iglobalMem;
-
-    const unsigned log2n=7;
-    const unsigned n=1<<log2n;
-
-    ipmatrix_t a=alloc_ipmatrix(hFree, log2n);
-    ipmatrix_t b=alloc_ipmatrix(hFree, log2n);
-    ipmatrix_t got=alloc_ipmatrix(hFree, log2n);
-    ipmatrix_t ref=alloc_ipmatrix(hFree, log2n);
-
-    uint32_t f_rand=1;
-
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            // Keep the values small so that it is exact
-            ipmatrix_set(p, a,r,c,f_rand);
-            f_rand=f_rand+1;
-            ipmatrix_set(p, b,r,c,f_rand);
-            f_rand=f_rand+2;
-        }
-    }
-
-    /*
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            printf(" %u", get(p, a,r,c));
-        }
-        printf("\n");
-    }
-    printf("\n");
-
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            printf(" %u", get(p, b,r,c));
-        }
-        printf("\n");
-    }
-    */
-
-
-    //printf("Begin standard mul...\n");
-    mul_ipmatrix(p, ref, a, b);
-    //printf("Begin strassen mul...\n");
-    strassen_indexed_v2(p, got, a, b, hFree);
-
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            //printf(" %g", get(p, ref,r,c));
-        }
-        //printf("\n");
-    }
-
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            //printf(" %g", get(p, got,r,c));
-        }
-        //printf("\n");
-    }
-
-    //printf("Begin check...\n");
     bool ok=true;
-    for(unsigned r=0;r<n;r++){
-        for(unsigned c=0;c<n;c++){
-            uint32_t rr=ipmatrix_get(p, ref,r,c);
-            uint32_t gg=ipmatrix_get(p, got,r,c);
-            //printf("%d, %d : %g ref=%g\n", r,c, gg, rr);
-            if( rr!=gg ){
-                //printf("  fail\n");
-                ok=false;
+
+    for(unsigned log2n=1; log2n<=9; log2n++){
+
+        ipfree_region_t hFree=0;
+        uint32_t *p=iglobalMem;
+
+        unsigned n=1<<log2n;
+
+        ipmatrix_t a=alloc_ipmatrix(hFree, log2n);
+        ipmatrix_t b=alloc_ipmatrix(hFree, log2n);
+        ipmatrix_t got=alloc_ipmatrix(hFree, log2n);
+        ipmatrix_t ref=alloc_ipmatrix(hFree, log2n);
+
+        uint32_t f_rand=1;
+
+        for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                // Keep the values small so that it is exact
+                ipmatrix_set(p, a,r,c,f_rand);
+                f_rand=f_rand+1;
+                ipmatrix_set(p, b,r,c,f_rand);
+                f_rand=f_rand+2;
+            }
+        }
+
+        /*
+        for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                printf(" %u", get(p, a,r,c));
+            }
+            printf("\n");
+        }
+        printf("\n");
+
+        for(unsigned r=0;r<n;r++){
+            for(unsigned c=0;c<n;c++){
+                printf(" %u", get(p, b,r,c));
+            }
+            printf("\n");
+        }
+        */
+
+
+        //printf("Begin standard mul...\n");
+        if(n<=128){
+            mul_ipmatrix(p, ref, a, b);
+        }
+        //printf("Begin strassen mul...\n");
+        if(logEvents){
+            printf("strassen_indexed_v2, n=%u, start\n", n);
+        }
+        strassen_indexed_v2(p, got, a, b, hFree);
+        if(logEvents){
+            printf("strassen_indexed_v2, n=%u, start\n", n);
+        }
+
+        if(n<=128){
+            //printf("Begin check...\n");
+
+            for(unsigned r=0;r<n;r++){
+                for(unsigned c=0;c<n;c++){
+                    uint32_t rr=ipmatrix_get(p, ref,r,c);
+                    uint32_t gg=ipmatrix_get(p, got,r,c);
+                    //printf("%d, %d : %g ref=%g\n", r,c, gg, rr);
+                    if( rr!=gg ){
+                        //printf("  fail\n");
+                        ok=false;
+                    }
+                }
             }
         }
     }

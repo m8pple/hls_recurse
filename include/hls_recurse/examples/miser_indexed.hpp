@@ -228,7 +228,7 @@ pfloat_pair_t r_miser_indexed(float *p, unsigned regn, unsigned long npts, uint3
 };
 
 
-pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t &seed, uint32_t region)
+pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed, uint32_t region)
 {
     /*
     Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
@@ -241,7 +241,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
     power-of-two subdivision of region.
     */
 
-    const unsigned TDim=4;
+    const int TDim=4;
     const float PFAC=0.1f;
     const int MNPT=15;
     const int MNBS=60;
@@ -254,7 +254,9 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
 
     // VHLS-HACK : closures cause problem?
     #define rngu() (seed=seed*1664525+1013904223, seed)
-    #define rngf() (rngu()*0.00000000023283064365386962890625f)
+    //LEGUP-HACK : avoid unsigned->float
+    //#define rngf() (rngu()*0.00000000023283064365386962890625f)
+    #define rngf() ( ((int)(rngu()&0x7FFFFFFFul)) *(2*0.00000000023283064365386962890625f))
 
 /*
     auto rngu=[&]() -> uint32_t{
@@ -266,8 +268,8 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
         return rngu() * 0.00000000023283064365386962890625f;
     };
 */
-    uint32_t regn_left, regn_right;
-    uint32_t nptl, nptr;
+    int regn_left, regn_right;
+    int nptl, nptr;
     float summ, summ2;
     pfloat_pair_t resl, resr;
 
@@ -299,7 +301,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
                 //fprintf(stderr, "branch, regn=%u, npts=%u, region=%u\n", regn, npts, region);
                 assert(regn<100000);
 
-                unsigned npre=max((unsigned)(npts*PFAC),(unsigned)MNPT);
+                int npre=max((int)(npts*PFAC),(int)MNPT);
                 //fprintf(stderr, "    depth=%d, npts=%u\n", depth, npts);
 
                 auto alloci=[&](unsigned n) -> unsigned
@@ -327,11 +329,11 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
                     fmaxl[j]=fmaxr[j] = -BIG;
                 }
 
-                unsigned jb=0;
+                int jb=0;
                 float siglb, sigrb;
 
                 float summ=0;
-                for (unsigned n=0;n<npre;n++) { // Loop over the points in the sample.
+                for (int n=0;n<npre;n++) { // Loop over the points in the sample.
                     // VHLS-HACK : Inlined target function to get it to compile
                     // VHLS-HACK : avoided local array for pt
                     // VHLS-HACK : shift register through shift to avoid local array
@@ -383,7 +385,8 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
                     jb=rngu()%TDim;
                 }
 
-                nptl=(unsigned long)(MNPT+(npts-npre-2*MNPT)*siglb
+                // LEGUP-HACK : avoid unsigned->float
+                nptl=(int)(MNPT+(npts-npre-2*MNPT)*siglb
                     /(siglb+sigrb)); //Equation (7.8.23).
 
                 nptr=npts-npre-nptl;
@@ -423,8 +426,10 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, uint32_t npts, uint32_t 
 };
 
 template<class T>
-bool test_miser_indexed(T miser_indexed)
+bool test_miser_indexed(T miser_indexed, bool logEvents=true)
 {
+    bool ok=true;
+
     const unsigned N = miser_test_config::N;
 
     float p[16384];
@@ -439,17 +444,27 @@ bool test_miser_indexed(T miser_indexed)
     p[6]=3;
     p[7]=4;
 
-    unsigned long npts=100000;
+    for(int npts=16; npts<=(1<<18); npts*=2){
 
-    uint32_t seed=12345678;
+        uint32_t seed=12345678;
 
-    unsigned freeStart=N*2;
+        unsigned freeStart=N*2;
 
-    auto res=miser_indexed(p, 0, npts, seed, freeStart);
+        if(logEvents){
+            printf("miser_indexed, n=%u, start\n", npts);
+        }
+        auto res=miser_indexed(p, 0, npts, seed, freeStart);
+        if(logEvents){
+            printf("miser_indexed, n=%u, start\n", npts);
+        }
 
-    printf("ave = %g, std = %g\n", pfloat_pair_first(res), sqrtf(pfloat_pair_second(res)));
+        //printf("ave = %g, std = %g\n", pfloat_pair_first(res), sqrtf(pfloat_pair_second(res)));
 
-    return ((0.0668252-0.001) < pfloat_pair_first(res)) && ( pfloat_pair_first(res) < (0.0668252+0.001));
+        if(npts >= 32768 ){
+            ok=ok && ( ((0.0780804-0.001) < pfloat_pair_first(res)) && ( pfloat_pair_second(res) < (0.0780804+0.001)));
+        }
+    }
+    return ok;
 }
 
 }; // hls_recurse

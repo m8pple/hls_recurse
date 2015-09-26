@@ -58,20 +58,32 @@ void f2_sum(uint32_t n, int32_t *f)
 }
 
 template<class T>
-bool test_sum(T sum)
+bool test_sum(T sum, bool logEvents=false)
 {
-    const uint32_t n=100;
-    int32_t x[n];
+    int32_t x[4096];
 
-    int32_t fx=0;
-    for(unsigned i=0;i<n;i++){
-        x[i]=fx;
-        fx=fx+1;
+    bool ok=true;
+
+    for(unsigned n=2; n<=4096; n*=2){
+
+        int32_t fx=0;
+        for(unsigned i=0;i<n;i++){
+            x[i]=fx;
+            fx=fx+1;
+        }
+
+        if(logEvents){
+            printf("sum, n=%u, start\n", n);
+        }
+        sum(n,x);
+        if(logEvents){
+            printf("sum, n=%u, start\n", n);
+        }
+
+        ok = ok && ( x[0]==n*(n-1)/2 );
     }
 
-    f_sum(n,x);
-
-    return x[0]==n*(n-1)/2;
+    return ok;
 }
 
 }; // hls_recurse
