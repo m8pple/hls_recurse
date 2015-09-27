@@ -118,7 +118,7 @@ HLS_INLINE_STEP TRet run_function_old(const TImpl &body, TState &...state)
 {
     typedef v1::CallStack<TRet, TState...> call_stack_t;
 
-	typename call_stack_t::stack_entry_t stack[32];
+	typename call_stack_t::stack_entry_t stack[512];
 
 	call_stack_t call_stack(stack, state...);
 

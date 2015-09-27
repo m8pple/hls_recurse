@@ -10,6 +10,7 @@ set(VIVADO_ROOT /cygdrive/C/Usr/Xilinx2015.2/Vivado/2015.2
 file(RELATIVE_PATH HLS_RECURSE_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(eval_vhls_synth)
+add_custom_target(eval_vhls_impl)
 add_custom_target(eval_vhls)
 
 function(add_vivado_hls_core DESIGN_NAME)
@@ -93,6 +94,10 @@ add_custom_command(
 add_custom_target(eval_vhls_${DESIGN_NAME}_impl
     DEPENDS ${DESIGN_NAME}/implement.tcl
     DEPENDS ${DESIGN_NAME}/implement.log
+)
+
+add_dependencies(eval_vhls_impl
+    eval_vhls_${DESIGN_NAME}_impl
 )
 
 add_custom_command(

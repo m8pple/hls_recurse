@@ -54,7 +54,7 @@ uint32_t f_fib(uint32_t n)
     return fib(n,0,0);
 }
 
-uint32_t f2_fib(uint32_t n)
+extern "C" uint32_t __attribute__((noinline)) f2_fib(uint32_t n)
 {
     uint32_t f_n_1, f_n_2;
 
@@ -92,6 +92,12 @@ bool test_fib(T fib, bool logEvents=false)
     }
 
     return failed==0;
+}
+
+template<class T>
+int harness_fib(T fib)
+{
+    return fib(64);
 }
 
 }; // hls_recurse

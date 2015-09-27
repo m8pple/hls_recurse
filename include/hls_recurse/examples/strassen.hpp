@@ -327,7 +327,7 @@ bool test_strassen(TImpl strassen, bool logEvents=false)
 {
     bool ok=true;
 
-    for(unsigned n=2; n<=512; n*=2){
+    for(unsigned n=2; n<=128; n*=2){
 
     free_region_t hFree=strassen_globalMem;
 

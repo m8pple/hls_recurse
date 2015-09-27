@@ -444,7 +444,7 @@ bool test_miser_indexed(T miser_indexed, bool logEvents=true)
     p[6]=3;
     p[7]=4;
 
-    for(int npts=16; npts<=(1<<18); npts*=2){
+    for(int npts=16; npts<=(1<<16); npts*=2){
 
         uint32_t seed=12345678;
 

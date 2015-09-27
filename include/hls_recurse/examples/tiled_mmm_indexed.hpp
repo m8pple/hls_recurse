@@ -95,7 +95,7 @@ bool test_tiled_mmm_indexed(T tiled_mmm_indexed, bool logEvents=false)
 {
     bool ok=true;
 
-    const unsigned MN=512;
+    const unsigned MN=128;
     float a[512*512], b[512*512], got[512*512], ref[512*512];
 
     for(int n=2;n<=MN;n*=2){

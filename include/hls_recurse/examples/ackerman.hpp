@@ -18,7 +18,7 @@ uint32_t r_ackerman(uint32_t m, uint32_t n)
         return r_ackerman(m-1,n);
     }
 }
-
+/*
 class Ackerman
     : public Function<Ackerman,uint32_t, uint32_t,uint32_t>
     {
@@ -56,12 +56,10 @@ uint32_t f_ackerman(uint32_t m, uint32_t n)
     Ackerman ackerman(stack);
 
     return ackerman(m,n);
-}
+}*/
 
-uint32_t f2_ackerman(uint32_t _m, uint32_t _n)
+uint32_t f2_ackerman(uint32_t m, uint32_t n)
 {
-    uint32_t m=_m, n=_n;
-
     return run_function_old<uint32_t>(
         Sequence(
             //[&](){ printf("A(%d,%d)\n", m,n); },
@@ -72,6 +70,9 @@ uint32_t f2_ackerman(uint32_t _m, uint32_t _n)
                     Sequence(
                         RecurseWithResult(n, [&](){ return make_hls_state_tuple(m,n-1); }),
                         RecurseAndReturn([&](){ return make_hls_state_tuple(m-1,n); })
+                        // LEGUP-HACK:
+                        //RecurseWithResult(n, [&](){ return make_hls_state_tuple(m-1,n); }),
+                        //Return([&](){ return n; })
                     )
                 )
             )
@@ -87,6 +88,7 @@ bool test_ackerman(T ackerman, bool logEvents=false)
         int m;
         int n;
         int ref;
+        int _pad;
     }aTests[]={
         {0,0,1},
         {1,0,2},
@@ -129,7 +131,7 @@ bool test_ackerman(T ackerman, bool logEvents=false)
         }
         //printf("ack(%d,%d)=%d, got=%d\n", m,n,ref, got);
         if(got!=ref){
-            //printf("FAIL : ack(%d,%d)=%d, got=%d\n", m,n,ref, got);
+            printf("FAIL : ack(%d,%d)=%d, got=%d\n", m,n,ref, got);
             failed++;
         }
     }

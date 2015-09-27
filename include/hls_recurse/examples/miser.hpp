@@ -470,7 +470,7 @@ bool test_miser(T miser, bool logEvents=false)
     float regn[2*N]={0,0,0,0, 1,2,3,4};
 
     // LEGUP-HACK : converted from unsigned->int to avoid unsigned->float
-    for(int npts=2; npts<=(1<<18); npts*=2){
+    for(int npts=2; npts<=(1<<16); npts*=2){
 
         float dith=0.05f;
         XorShift128 rng;

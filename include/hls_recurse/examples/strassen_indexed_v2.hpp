@@ -334,7 +334,7 @@ bool test_strassen_indexed_v2(TImpl strassen_indexed_v2,bool logEvents=false)
 {
     bool ok=true;
 
-    for(unsigned log2n=1; log2n<=9; log2n++){
+    for(unsigned log2n=1; log2n<=7; log2n++){
 
         ipfree_region_t hFree=0;
         uint32_t *p=iglobalMem;

@@ -27,7 +27,7 @@ configure_file(Makefile.common ${DESIGN_NAME}/build/Makefile.common COPYONLY)
 add_custom_command(OUTPUT ${DESIGN_NAME}/build/legup_${DESIGN_NAME}.v
     DEPENDS LLVMShortenLabels
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/legup_${DESIGN_NAME}.cpp
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/legup.makefile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/makefile
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/Makefile.common
     WORKING_DIRECTORY ${DESIGN_NAME}/build
     COMMAND make  all
@@ -35,13 +35,13 @@ add_custom_command(OUTPUT ${DESIGN_NAME}/build/legup_${DESIGN_NAME}.v
 
 add_custom_target(eval_legup_${DESIGN_NAME}_synth
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/legup_${DESIGN_NAME}.cpp
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/legup.makefile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/makefile
     DEPENDS ${DESIGN_NAME}/build/legup_${DESIGN_NAME}.v
 )
 
 add_custom_command(OUTPUT ${DESIGN_NAME}/build/legup_${DESIGN_NAME}_simulation.log
     DEPENDS eval_legup_${DESIGN_NAME}_synth
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/legup.makefile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build//makefile
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/build/Makefile.common
     WORKING_DIRECTORY ${DESIGN_NAME}/build
     COMMAND make  v | tee legup_${DESIGN_NAME}_simulation.log
@@ -52,6 +52,25 @@ add_custom_target(eval_legup_${DESIGN_NAME}_sim
 )
 
 add_dependencies(eval_legup_sim eval_legup_${DESIGN_NAME}_sim)
+
+configure_file(ip_config.tcl ${DESIGN_NAME}/ip/ip_config.tcl)
+configure_file(Makefile.common ${DESIGN_NAME}/ip/Makefile.common COPYONLY)
+configure_file(ip_legup.makefile ${DESIGN_NAME}/ip/makefile)
+
+configure_file(legup_ip_generic.cpp ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.cpp)
+
+add_custom_command(OUTPUT ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.v
+    DEPENDS LLVMShortenLabels
+    #DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.cpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/ip/makefile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}/ip/Makefile.common
+    WORKING_DIRECTORY ${DESIGN_NAME}/ip
+    COMMAND make  all
+)
+
+add_custom_target(eval_legup_${DESIGN_NAME}_ip_synth
+    DEPENDS ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.v
+)
 
 endfunction(add_legup_hls_design)
 

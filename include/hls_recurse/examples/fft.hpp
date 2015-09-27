@@ -263,6 +263,20 @@ bool test_fft(T fft, bool logEvents=false)
     return true;
 }
 
-}; // hls_recurse
+template<class T>
+bool harness_fft(T fft)
+{
+    complex_t in[4096], out[4096];
+
+    for(int i=0; i<4096; i++){
+      in[i]=complex_t::from_int(i,0);
+    }
+
+    fft(12, &in[0], &out[0]);
+
+    return out[0].re_int();
+}
+
+}; //
 
 #endif

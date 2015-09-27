@@ -60,6 +60,7 @@ endif
 # Each .c file will be compiled to its own .bc file by the frontend target(s)
 ifndef FEOBJS
 	FEOBJS := $(SRCS:.c=.fe.bc)
+	FEOBJS := $(FEOBJS:.cpp=.fe.bc)
 endif
 
 # By default, name the output files by the directory name
