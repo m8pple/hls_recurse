@@ -1,3 +1,4 @@
+add_executable_test(examples fib)
 add_executable_test(examples ackerman)
 add_executable_test(examples fft)
 add_executable_test(examples tiled_mmm)
