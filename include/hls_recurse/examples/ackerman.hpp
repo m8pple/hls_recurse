@@ -22,33 +22,33 @@ uint32_t r_ackerman(uint32_t m, uint32_t n)
 uint32_t man_ackerman(uint32_t m, uint32_t n)
 {
     const unsigned DEPTH=512;
-    
+
     unsigned sp=0;
     uint32_t stack_n[DEPTH];
     uint32_t stack_m[DEPTH];
     int stack_state[DEPTH];
     uint32_t retval;
-    
+
     stack_n[sp]=n;
     stack_m[sp]=m;
     stack_state[sp]=0;
-    
+
     while(1){
         int state=stack_state[sp];
         n=stack_n[sp];
         m=stack_m[sp];
-        
+
         /*
         for(int i=0;i<sp;i++){
             printf("  ");
         }
         printf("sp=%d, n=%d, m=%d ", sp, n,m);
         */
-        
+
         if(state==0){
             if(m==0){
                 //printf("leaf\n");
-                
+
                 retval=n+1;
                 if(sp==0){
                     break;
@@ -57,7 +57,7 @@ uint32_t man_ackerman(uint32_t m, uint32_t n)
                 }
             }else if(m>0 && n==0){
                 //printf("branchA-0\n");
-                
+
                 // return r_ackerman(m-1, 1);
                 // call r_ackerman(m-1, 1);
                 stack_state[sp]=1;
@@ -67,7 +67,7 @@ uint32_t man_ackerman(uint32_t m, uint32_t n)
                 stack_n[sp]=1;
             }else{
                 //printf("branchB-0\n");
-                
+
                 //n=r_ackerman(m,n-1);
                 //return r_ackerman(m-1,n);
                 // call ackerman(m,n-1)
@@ -230,6 +230,18 @@ bool test_ackerman(T ackerman, bool logEvents=false)
     }
 
     return failed==0;
+}
+
+template<class T>
+int harness_ackerman(T ackerman)
+{
+    int acc=0;
+    for(int n=0;n<4;n++){
+        for(int m=0;m<4;m++){
+            acc+=ackerman(m,n);
+        }
+    }
+    return acc;
 }
 
 }; // hls_recurse

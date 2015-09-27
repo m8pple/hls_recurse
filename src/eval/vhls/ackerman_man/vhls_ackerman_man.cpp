@@ -9,5 +9,5 @@ uint32_t vhls_ackerman_man(uint32_t m, uint32_t n)
 
 int main()
 {
-    return test_ackerman_man(vhls_ackerman_man);
+    return test_ackerman(vhls_ackerman_man);
 };

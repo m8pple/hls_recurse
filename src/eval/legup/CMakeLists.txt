@@ -72,10 +72,24 @@ add_custom_target(eval_legup_${DESIGN_NAME}_ip_synth
     DEPENDS ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.v
 )
 
+add_custom_command(OUTPUT ${DESIGN_NAME}/ip/top.sta.rpt
+    DEPENDS eval_legup_${DESIGN_NAME}_ip_synth
+    DEPENDS ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.v
+    WORKING_DIRECTORY ${DESIGN_NAME}/ip
+    COMMAND make p
+    COMMAND make f
+)
+
+add_custom_target(eval_legup_${DESIGN_NAME}_ip_impl
+    DEPENDS ${DESIGN_NAME}/ip/top.sta.rpt
+)
+
 endfunction(add_legup_hls_design)
 
 add_legup_hls_design(fib)
+add_legup_hls_design(fib_man)
 add_legup_hls_design(ackerman)
+add_legup_hls_design(ackerman_man)
 add_legup_hls_design(sum)
 add_legup_hls_design(sum_indexed)
 add_legup_hls_design(fft)
