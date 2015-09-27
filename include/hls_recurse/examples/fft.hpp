@@ -266,13 +266,13 @@ bool test_fft(T fft, bool logEvents=false)
 template<class T>
 bool harness_fft(T fft)
 {
-    complex_t in[4096], out[4096];
+    complex_t in[512], out[512];
 
-    for(int i=0; i<4096; i++){
+    for(int i=0; i<512; i++){
       in[i]=complex_t::from_int(i,0);
     }
 
-    fft(12, &in[0], &out[0]);
+    fft(9, &in[0], &out[0]);
 
     return out[0].re_int();
 }

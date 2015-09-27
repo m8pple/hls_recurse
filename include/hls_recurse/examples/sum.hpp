@@ -86,6 +86,20 @@ bool test_sum(T sum, bool logEvents=false)
     return ok;
 }
 
+template<class T>
+bool harness_sum(T sum)
+{
+    int32_t x[1024];
+
+    for(int i=0;i<1024;i++){
+        x[i]=i;
+    }
+
+    sum(1024,x);
+
+    return x[0];
+}
+
 }; // hls_recurse
 
 #endif

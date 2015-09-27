@@ -7,3 +7,4 @@ source /home/legup/legup-4.0/examples/legup.tcl
 #set_parameter LOCAL_RAMS 1
 set_accelerator_function f2_${DESIGN_NAME}
 
+set_parameter CLOCK_PERIOD 6.666

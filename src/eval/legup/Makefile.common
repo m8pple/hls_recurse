@@ -352,9 +352,10 @@ ifeq ($(MULTICYCLE_CONSTRAINTS),1)
 	# Finally, run a script to fix incorrect signal names
 else
 	# create an sdc file with a 1ns clock period
-	echo "create_clock -period 2 -name clk [get_ports clk]" > $(NAME).sdc
-	echo "create_clock -period 1 -name clk2x [get_ports clk2x]" >> $(NAME).sdc
-	echo "create_clock -period 2 -name OSC_50_BANK2 [get_ports OSC_50_BANK2]" >> $(NAME).sdc
+	# DT10  -Use 150MHz constraint
+	echo "create_clock -period 6.6666 -name clk [get_ports clk]" > $(NAME).sdc
+	echo "create_clock -period 3.3333 -name clk2x [get_ports clk2x]" >> $(NAME).sdc
+	echo "create_clock -period 6.6666 -name OSC_50_BANK2 [get_ports OSC_50_BANK2]" >> $(NAME).sdc
 	echo "derive_pll_clocks" >> $(NAME).sdc
 	echo "derive_clock_uncertainty" >> $(NAME).sdc
 endif
@@ -386,6 +387,9 @@ endif
 ifeq ($(MULTICYCLE_CONSTRAINTS),1)
 	@cat llvm_prof_multicycle_constraints.qsf >> top.qsf 2>/dev/null ||:
 endif
+
+dddd :
+	echo $(VERILOG_LIB_DIR)
 
 # Run FPGA mapper
 q: $(VFILE)
