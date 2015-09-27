@@ -122,18 +122,27 @@ add_dependencies(eval_vhls eval_vhls_${DESIGN_NAME})
 
 endfunction(add_vivado_hls_core)
 
-
-add_vivado_hls_core(sudoku)
 add_vivado_hls_core(fib)
 add_vivado_hls_core(fib_man)
-add_vivado_hls_core(fft_indexed)
-add_vivado_hls_core(fft_indexed_man)
+
 add_vivado_hls_core(ackerman)
 add_vivado_hls_core(ackerman_man)
-add_vivado_hls_core(tiled_mmm_indexed)
+
+add_vivado_hls_core(sum_indexed)
+add_vivado_hls_core(sum_indexed_man)
+
 add_vivado_hls_core(sort_indexed)
 add_vivado_hls_core(sort_indexed_man)
+
+add_vivado_hls_core(sudoku)
+add_vivado_hls_core(sudoku_man)
+
+add_vivado_hls_core(fft_indexed)
+add_vivado_hls_core(fft_indexed_man)
+
+add_vivado_hls_core(tiled_mmm_indexed)
 add_vivado_hls_core(strassen_indexed_v2)
+
 add_vivado_hls_core(naive_mmm_indexed)
+
 add_vivado_hls_core(miser_indexed)
-add_vivado_hls_core(sum_indexed)
