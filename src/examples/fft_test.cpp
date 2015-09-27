@@ -16,6 +16,13 @@ int main()
     uint64_t t2=time_now();
     printf("FFT/r : %lg s\n", time_delta(t1,t2));
     
+    t1=time_now();
+    if(!test_fft(man_fft)){
+        fprintf(stderr, "FFT/manual failed.\n");
+    }
+    t2=time_now();
+    printf("FFT/manual : %lg s\n", time_delta(t1,t2));
+    
     uint64_t t3=time_now();
     if(!test_fft(f2_fft)){
         fprintf(stderr, "MISER/f2 failed.\n");

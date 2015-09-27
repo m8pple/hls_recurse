@@ -82,9 +82,142 @@ bool r_sudoku_aux(int *puzzle, int row=0, int column=0)
     return false;
 }
 
+
+
 bool r_sudoku(int *puzzle)
 {
     return r_sudoku_aux(puzzle, 0, 0);
+}
+
+bool man_sudoku(int *puzzle)
+{
+    int row=0;
+    int column=0;
+    
+    const unsigned DEPTH=512;
+    
+    int sp=0;
+    int stack_row[DEPTH];
+    int stack_column[DEPTH];
+    int stack_nextNum[DEPTH];
+    int stack_state[DEPTH];
+    bool retval;
+    
+    stack_row[0]=0;
+    stack_column[0]=0;
+    stack_state[0]=0;
+    
+    while(1){
+        row=stack_row[sp];
+        column=stack_column[sp];
+        int nextNum=stack_nextNum[sp];
+        int state=stack_state[sp];
+        
+        /*for(int i=0;i<sp;i++){
+            printf(" ");
+        }
+        printf("r=%d, c=%d", row, column);*/
+        
+        if(state==0){
+            //printf("enter\n");
+            
+            if( 9==row ) {
+                retval=true;
+                if(sp==0){
+                    break;
+                }else{
+                    sp--;
+                }
+                continue;
+            }
+            
+            // Is this element already set?  If so, we don't want to
+            // change it.  Recur immediately to the next cell.
+            if( puzzle[row*9+column] ){
+                if( column==8 ){
+                    //return r_sudoku_aux(puzzle, row+1, 0);
+                    stack_state[sp]=1;
+                    sp++;
+                    stack_state[sp]=0;
+                    stack_row[sp]=row+1;
+                    stack_column[sp]=0;
+                    continue;
+                }else{
+                    //return r_sudoku_aux(puzzle, row, column+1);
+                    stack_state[sp]=1;
+                    sp++;
+                    stack_state[sp]=0;
+                    stack_row[sp]=row;
+                    stack_column[sp]=column+1;
+                    continue;
+                }
+            }
+            
+            stack_nextNum[sp]=1;
+            stack_state[sp]=2;
+        }else if(state==1){
+            //printf("return0-1\n");
+            if(sp==0){
+                break;
+            }else{
+                sp--;
+            }
+        }else if(state==2){
+            if(nextNum<10){
+                //printf("loop-2\n");
+                if(isValid(nextNum, puzzle, row, column)){
+                    puzzle[row*9+column]=nextNum;
+                    if(column==8){
+                        stack_state[sp]=3;
+                        sp++;
+                        stack_state[sp]=0;
+                        stack_row[sp]=row+1;
+                        stack_column[sp]=0;
+                        continue;
+                    }else{
+                        stack_state[sp]=3;
+                        sp++;
+                        stack_state[sp]=0;
+                        stack_row[sp]=row;
+                        stack_column[sp]=column+1;
+                        continue;
+                    }
+                }else{
+                    stack_state[sp]=2; // next iteration
+                    stack_nextNum[sp]=nextNum+1;
+                    continue;
+                }
+            }else{
+                //printf("break-2\n");
+                // Have to backtrack
+                // return false;
+                retval=false;
+                if(sp==0){
+                    break;
+                }else{
+                    sp--;
+                }
+            }
+        }else if(state==3){
+            // return from recursion
+            if(retval==true){ // success
+                //printf("return-3\n");
+                if(sp==0){
+                    break;
+                }else{
+                    sp--;
+                }
+            }else{
+                //printf("backtrack-3\n");
+                // We failed to find a valid value for this, undo
+                puzzle[row*9+column] = 0;
+                
+                stack_state[sp]=2; // next iteration
+                stack_nextNum[sp]=nextNum+1;
+            }
+        }
+    }
+    return retval;
 }
 
 class Sudoku
