@@ -12,7 +12,7 @@ namespace hls_recurse
 
 void f2_fft_indexed_man(int log2n, const complex_t *pIn, complex_t *pOut)
 {
-    fft_indexed_man(log2n, pIn, pOut);
+    man_fft_indexed(log2n, pIn, pOut);
 }
 
 template<class T>

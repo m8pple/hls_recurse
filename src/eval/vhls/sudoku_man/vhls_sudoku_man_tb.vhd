@@ -71,10 +71,18 @@ begin
     process(ap_clk) begin
         if (rising_edge(ap_clk)) then
             if puzzle_ce0='1' then
+                -- VHLS-HACK : Vivado HLS will generate speculative reads out of bounds, AFAICT.
+                -- Seems a bit dodgy to me...
                 if puzzle_we0='1' then
-                    array_stg(to_integer(unsigned(puzzle_address0))) := to_integer(unsigned(puzzle_d0));
+                    assert false report "Write "&integer'image(to_integer(unsigned(puzzle_address0)))&", cycles="&integer'image(to_integer(cycles)) severity note;
+                    if to_integer(unsigned(puzzle_address0)) < 81 then
+                        array_stg(to_integer(unsigned(puzzle_address0))) := to_integer(unsigned(puzzle_d0));
+                    end if;
                 else
-                    puzzle_q0 <= std_logic_vector(to_unsigned(array_stg(to_integer(unsigned(puzzle_address0))),32));
+                    assert false report "Read "&integer'image(to_integer(unsigned(puzzle_address0)))&", cycles="&integer'image(to_integer(cycles)) severity note;
+                    if to_integer(unsigned(puzzle_address0)) < 81 then
+                        puzzle_q0 <= std_logic_vector(to_unsigned(array_stg(to_integer(unsigned(puzzle_address0))),32));
+                    end if;
                 end if;
             end if;
         end if;

@@ -3,6 +3,8 @@
 
 #include "hls_recurse/state_machine_self_recursion.hpp"
 
+#include "hls_recurse/examples/strassen_indexed_v2.hpp"
+
 namespace hls_recurse
 {
 

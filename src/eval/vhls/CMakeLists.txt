@@ -141,7 +141,9 @@ add_vivado_hls_core(fft_indexed)
 add_vivado_hls_core(fft_indexed_man)
 
 add_vivado_hls_core(tiled_mmm_indexed)
+
 add_vivado_hls_core(strassen_indexed_v2)
+add_vivado_hls_core(strassen_indexed_v2_man)
 
 add_vivado_hls_core(naive_mmm_indexed)
 
