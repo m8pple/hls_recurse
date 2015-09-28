@@ -12,7 +12,7 @@ namespace hls_recurse
 
 void f2_fft_man(int log2n, const complex_t *pIn, complex_t *pOut)
 {
-    man_fft(logwn, pIn, pOut);
+    man_fft(log2n, pIn, pOut);
 }
 
 template<class T>

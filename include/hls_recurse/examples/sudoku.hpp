@@ -93,34 +93,34 @@ bool man_sudoku(int *puzzle)
 {
     int row=0;
     int column=0;
-    
+
     const unsigned DEPTH=512;
-    
+
     int sp=0;
     int stack_row[DEPTH];
     int stack_column[DEPTH];
     int stack_nextNum[DEPTH];
     int stack_state[DEPTH];
     bool retval;
-    
+
     stack_row[0]=0;
     stack_column[0]=0;
     stack_state[0]=0;
-    
+
     while(1){
         row=stack_row[sp];
         column=stack_column[sp];
         int nextNum=stack_nextNum[sp];
         int state=stack_state[sp];
-        
+
         /*for(int i=0;i<sp;i++){
             printf(" ");
         }
         printf("r=%d, c=%d", row, column);*/
-        
+
         if(state==0){
             //printf("enter\n");
-            
+
             if( 9==row ) {
                 retval=true;
                 if(sp==0){
@@ -130,7 +130,7 @@ bool man_sudoku(int *puzzle)
                 }
                 continue;
             }
-            
+
             // Is this element already set?  If so, we don't want to
             // change it.  Recur immediately to the next cell.
             if( puzzle[row*9+column] ){
@@ -152,7 +152,7 @@ bool man_sudoku(int *puzzle)
                     continue;
                 }
             }
-            
+
             stack_nextNum[sp]=1;
             stack_state[sp]=2;
         }else if(state==1){
@@ -211,7 +211,7 @@ bool man_sudoku(int *puzzle)
                 //printf("backtrack-3\n");
                 // We failed to find a valid value for this, undo
                 puzzle[row*9+column] = 0;
-                
+
                 stack_state[sp]=2; // next iteration
                 stack_nextNum[sp]=nextNum+1;
             }
@@ -361,6 +361,26 @@ bool test_sudoku(T sudoku, bool logEvents=false)
         //printf("\n");
     }
     return success;
+}
+
+template<class T>
+int harness_sudoku(T sudoku)
+{
+    int puzzle[81]={
+        0,0,3, 0,2,0, 6,0,0,
+        9,0,0, 3,0,5, 0,0,1,
+        0,0,1, 8,0,6, 4,0,0,
+        0,0,8, 1,0,2, 9,0,0,
+        7,0,0, 0,0,0, 0,0,8,
+        0,0,6, 7,0,8, 2,0,0,
+        0,0,2, 6,0,9, 5,0,0,
+        8,0,0, 2,0,3, 0,0,9,
+        0,0,5, 0,1,0, 3,0,0
+    };
+
+    sudoku(puzzle);
+
+    return puzzle[80];
 }
 
 }; // hls_recurse

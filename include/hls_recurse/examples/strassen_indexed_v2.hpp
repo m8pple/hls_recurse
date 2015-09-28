@@ -250,9 +250,9 @@ void r_strassen_indexed_v2(uint32_t *p, ipmatrix_t &dst, const ipmatrix_t &a, co
 void man_strassen_indexed_v2(uint32_t *p, ipmatrix_t &_dst, const ipmatrix_t &_a, const ipmatrix_t &_b, ipfree_region_t _hFree)
 {
     const unsigned DEPTH=512;
-    
+
     //printf("strassen(%d)\n", _dst.n);
-    
+
     int sp=0;
     int stack_log2n[DEPTH];
     ipmatrix_t stack_dst[DEPTH];
@@ -269,13 +269,13 @@ void man_strassen_indexed_v2(uint32_t *p, ipmatrix_t &_dst, const ipmatrix_t &_a
     ipmatrix_t stack_M6[DEPTH];
     ipmatrix_t stack_M7[DEPTH];
     int stack_state[DEPTH];
-    
+
     stack_dst[0]=_dst;
     stack_a[0]=_a;
     stack_b[0]=_b;
     stack_hFree[0]=_hFree;
     stack_state[0]=0;
-    
+
     while(1){
         int log2n=stack_log2n[sp];
         ipmatrix_t dst=stack_dst[sp];
@@ -292,20 +292,20 @@ void man_strassen_indexed_v2(uint32_t *p, ipmatrix_t &_dst, const ipmatrix_t &_a
         ipmatrix_t M6=stack_M6[sp];
         ipmatrix_t M7=stack_M7[sp];
         int state=stack_state[sp];
-        
+
         /*for(int i=0;i<sp;i++){
             printf("  ");
         }*/
-        
+
         if(state==0){
             log2n=ipmatrix_log2n(a);
             stack_log2n[sp]=log2n;
-            
+
             //printf("state0, n=%d", n);
-            
+
             assert(sp<=8);
-            
-            
+
+
             if(log2n<=4){
                 //printf(", leaf\n");
                 mul_ipmatrix(p, dst,a,b);
@@ -317,7 +317,7 @@ void man_strassen_indexed_v2(uint32_t *p, ipmatrix_t &_dst, const ipmatrix_t &_a
                     continue;
                 }
             }
-            
+
             //printf(", branch\n");
 
             log2n=log2n-1; // Size of ipmatrix_quads
@@ -604,6 +604,35 @@ bool test_strassen_indexed_v2(TImpl strassen_indexed_v2,bool logEvents=false)
         }
     }
     return ok;
+}
+
+template<class TImpl>
+bool harness_strassen_indexed_v2(TImpl strassen)
+{
+    const unsigned N=1<<12;
+
+    uint32_t ram[N];
+
+    unsigned n=64;
+    ipfree_region_t hFree=0;
+
+    for(int i=0;i<N;i++){
+        ram[i]=i;
+    }
+
+    ipmatrix_t a=alloc_ipmatrix(hFree, n);
+    ipmatrix_t b=alloc_ipmatrix(hFree, n);
+    ipmatrix_t got=alloc_ipmatrix(hFree, n);
+    ipmatrix_t ref=alloc_ipmatrix(hFree, n);
+
+    strassen(ram, got, a, b, hFree);
+
+    int res=0;
+    for(int i=0;i<N;i++){
+        res+=ram[i];
+    }
+
+    return res;
 }
 
 }; // hls_recurse

@@ -3,6 +3,8 @@
 set(LLVM_SHORTEN_LABELS_LIB $<TARGET_FILE:LLVMShortenLabels>)
 
 add_custom_target(eval_legup_sim)
+add_custom_target(eval_legup_ip_impl)
+add_custom_target(eval_legup_ip_synth)
 
 function(add_legup_hls_design DESIGN_NAME)
 
@@ -72,16 +74,26 @@ add_custom_target(eval_legup_${DESIGN_NAME}_ip_synth
     DEPENDS ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.v
 )
 
+add_dependencies(eval_legup_ip_synth
+    eval_legup_${DESIGN_NAME}_ip_synth
+)
+
 add_custom_command(OUTPUT ${DESIGN_NAME}/ip/top.sta.rpt
     DEPENDS eval_legup_${DESIGN_NAME}_ip_synth
     DEPENDS ${DESIGN_NAME}/ip/legup_${DESIGN_NAME}.v
     WORKING_DIRECTORY ${DESIGN_NAME}/ip
+    COMMAND cp /home/legup/legup-4.0/ip/libs/altera/altfp*.v .
     COMMAND make p
+    COMMAND make q
     COMMAND make f
 )
 
 add_custom_target(eval_legup_${DESIGN_NAME}_ip_impl
     DEPENDS ${DESIGN_NAME}/ip/top.sta.rpt
+)
+
+add_dependencies(eval_legup_ip_impl
+    eval_legup_${DESIGN_NAME}_ip_impl
 )
 
 endfunction(add_legup_hls_design)
@@ -91,15 +103,30 @@ add_legup_hls_design(fib_man)
 add_legup_hls_design(ackerman)
 add_legup_hls_design(ackerman_man)
 add_legup_hls_design(sum)
+add_legup_hls_design(sum_man)
 add_legup_hls_design(sum_indexed)
+add_legup_hls_design(sum_indexed_man)
 add_legup_hls_design(fft)
+add_legup_hls_design(fft_man)
 add_legup_hls_design(fft_indexed)
+add_legup_hls_design(fft_indexed_man)
 add_legup_hls_design(sort)
+add_legup_hls_design(sort_man)
 add_legup_hls_design(sort_indexed)
-add_legup_hls_design(sudoku)  ## Doesn't work due to incorrect addressing
-add_legup_hls_design(strassen)
+add_legup_hls_design(sort_indexed_man)
+add_legup_hls_design(sudoku)
+add_legup_hls_design(sudoku_man)
+
+## Runs out of resources, due to massive RAMs I think
+#add_legup_hls_design(strassen)
+#add_legup_hls_design(strassen_man)
+
 add_legup_hls_design(strassen_indexed_v2)
-add_legup_hls_design(miser)  ## Doesn't work, some kind of internal cast error
+add_legup_hls_design(strassen_indexed_v2_man)
+#add_legup_hls_design(miser)  ## Doesn't work, some kind of internal cast error
+#add_legup_hls_design(miser_man)
 add_legup_hls_design(miser_indexed)
-add_legup_hls_design(tiled_mmm)
-add_legup_hls_design(tiled_mmm_indexed)
+add_legup_hls_design(miser_indexed_man)
+
+#add_legup_hls_design(tiled_mmm)
+#add_legup_hls_design(tiled_mmm_indexed)

@@ -58,32 +58,32 @@ void f2_sort_indexed(uint32_t *a, int n)
 void man_sort_indexed(uint32_t *a, int n)
 {
     //printf("sort(%d)\n", n);
-    
+
     const unsigned DEPTH=512;
-    
+
     int aBase=0;
-    
+
     int sp=0;
     int stack_aBase[DEPTH];
     int stack_n[DEPTH];
     int stack_split[DEPTH];
     int stack_state[DEPTH];
-    
+
     stack_aBase[0]=aBase;
     stack_n[0]=n;
     stack_state[0]=0;
-    
+
     while(1){
         aBase=stack_aBase[sp];
         n=stack_n[sp];
         int split=stack_split[sp];
         int state=stack_state[sp];
-        
+
         /*for(int i=0;i<sp;i++){
             printf("  ");
         }
         printf("n=%d",n);*/
-        
+
         if(state==0){
             if( n < 32 ){
                 //printf(" leaf\n");
@@ -130,7 +130,7 @@ void man_sort_indexed(uint32_t *a, int n)
                     a[aBase+j]=tmp;
                 }
                 split=i;
-                
+
                 stack_split[sp]=split;
                 stack_state[sp]=1;
                 // call r_sort(a, split)
@@ -197,6 +197,19 @@ bool test_sort_indexed(T sort_indexed, bool logEvents=false)
     return true;
 }
 
+template<class T>
+int harness_sort_indexed(T sort, bool logEvents=false)
+{
+    uint32_t x[1024];
+
+    for(int i=1023;i>=0;i--){
+        x[i]=1024-i;
+    }
+
+    sort(x, 1024);
+
+    return x[0];
+}
 
 }; // hls_recurse
 

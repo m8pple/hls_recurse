@@ -493,6 +493,33 @@ bool test_miser(T miser, bool logEvents=false)
     return ok;
 }
 
+template<class T>
+int harness_miser(T miser)
+{
+    const unsigned N = miser_test_config::N;
+
+    float p[1024];
+
+    // Initial N*2 region
+    p[0]=0;
+    p[1]=0;
+    p[2]=0;
+    p[3]=0;
+    p[4]=1;
+    p[5]=2;
+    p[6]=3;
+    p[7]=4;
+
+    XorShift128 rng;
+    RegionAllocator<float> region(p+8, sizeof(p)/sizeof(p[0])-8);
+
+    unsigned freeStart=N*2;
+
+    auto res=miser(p, 100000, 0.05f, rng, region);
+
+    return *(int*)&res.first;
+}
+
 }; // hls_recurse
 
 #endif

@@ -252,17 +252,23 @@ pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, u
     //a subregion is further bisected only if at least MNBS function evaluations are available. We take
     //MNBS = 4*MNPT.
 
-    auto rngu=[&]() -> uint32_t{
-        seed=seed*1664525+1013904223;
+    /*auto rngu=[&]() -> uint32_t{
+        seed=seed*1664525u+1013904223u;
         return seed;
     };
 
     auto rngf=[&]() -> float{
         return rngu() * 0.00000000023283064365386962890625f;
-    };
-    
+    };*/
+
+    // VHLS-HACK : closures cause problem?
+    #define rngu() (seed=seed*1664525+1013904223, seed)
+    //LEGUP-HACK : avoid unsigned->float
+    //#define rngf() (rngu()*0.00000000023283064365386962890625f)
+    #define rngf() ( ((int)(rngu()&0x7FFFFFFFul)) *(2*0.00000000023283064365386962890625f))
+
     const int DEPTH=512;
-    
+
     // All int to keep legup happy in conversions
     int stack_regn[DEPTH];
     int stack_npts[DEPTH];
@@ -276,12 +282,12 @@ pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, u
     int stack_state[DEPTH];
     int sp=0;
     pfloat_pair_t retval;
-    
+
     stack_regn[0]=_regn;
     stack_npts[0]=_npts;
     stack_region[0]=_region;
-    stack_state[0]=0;    
-    
+    stack_state[0]=0;
+
     while(1){
         int regn=stack_regn[sp];
         int npts=stack_npts[sp];
@@ -292,9 +298,9 @@ pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, u
         int nptr=stack_nptr[sp];
         int regn_left=stack_regn_left[sp];
         int regn_right=stack_regn_right[sp];
-        
+
         int state=stack_state[sp];
-        
+
         if(state==0){
             if (npts < MNBS) { // Too few points to bisect; do straight
                 float summ=0.0f, summ2=0.0f; //Monte Carlo.
@@ -444,7 +450,7 @@ pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, u
             // finish pfloat_pair_t resl=r_miser_indexed(p, regn_left, nptl, seed, region);
             resl=retval;
             stack_resl[sp]=resl;
-            
+
             // call pfloat_pair_t resr=r_miser_indexed(p, regn_right,nptr, seed, region);
             stack_state[sp]=2;
             sp++;
@@ -454,10 +460,10 @@ pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, u
             stack_region[sp]=region;
         }else if(state==2){
             // finish pfloat_pair_t resr=r_miser_indexed(p, regn_right,nptr, seed, region);
-            
+
             resr=retval;
             stack_resr[sp]=resr;
-            
+
             retval=pfloat_pair_create(
                 0.5*pfloat_pair_first(resl)+0.5*pfloat_pair_first(resr),
                 0.25*pfloat_pair_second(resl)+0.25*pfloat_pair_second(resr)
@@ -469,7 +475,7 @@ pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, u
             }
         }
     }
-    
+
     return retval;
 };
 
@@ -712,6 +718,34 @@ bool test_miser_indexed(T miser_indexed, bool logEvents=false)
     }
     return ok;
 }
+
+template<class T>
+int harness_miser_indexed(T miser_indexed)
+{
+    const unsigned N = miser_test_config::N;
+
+    float p[1024];
+
+    // Initial N*2 region
+    p[0]=0;
+    p[1]=0;
+    p[2]=0;
+    p[3]=0;
+    p[4]=1;
+    p[5]=2;
+    p[6]=3;
+    p[7]=4;
+
+    uint32_t seed=12345678;
+
+    unsigned freeStart=N*2;
+
+    auto res=miser_indexed(p, 0, 100000, seed, freeStart);
+
+    return (int)(res>>32);
+}
+
+
 
 }; // hls_recurse
 

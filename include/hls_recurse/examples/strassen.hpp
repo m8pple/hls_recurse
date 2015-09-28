@@ -160,9 +160,9 @@ void r_strassen(matrix_t &dst, const matrix_t &a, const matrix_t &b, free_region
 void man_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_region_t _hFree)
 {
     const unsigned DEPTH=512;
-    
+
     //printf("strassen(%d)\n", _dst.n);
-    
+
     int sp=0;
     int stack_n[DEPTH];
     matrix_t stack_dst[DEPTH];
@@ -179,13 +179,13 @@ void man_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_r
     matrix_t stack_M6[DEPTH];
     matrix_t stack_M7[DEPTH];
     int stack_state[DEPTH];
-    
+
     stack_dst[0]=_dst;
     stack_a[0]=_a;
     stack_b[0]=_b;
     stack_hFree[0]=_hFree;
     stack_state[0]=0;
-    
+
     while(1){
         int n=stack_n[sp];
         matrix_t dst=stack_dst[sp];
@@ -202,20 +202,20 @@ void man_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_r
         matrix_t M6=stack_M6[sp];
         matrix_t M7=stack_M7[sp];
         int state=stack_state[sp];
-        
+
         /*for(int i=0;i<sp;i++){
             printf("  ");
         }*/
-        
+
         if(state==0){
             n=dst.n;
             stack_n[sp]=n;
-            
+
             //printf("state0, n=%d", n);
-            
+
             assert(sp<=8);
-            
-            
+
+
             if(n<=16){
                 //printf(", leaf\n");
                 mul_matrix(dst,a,b);
@@ -227,7 +227,7 @@ void man_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_r
                     continue;
                 }
             }
-            
+
             //printf(", branch\n");
 
             n=n/2; // Size of quads
@@ -608,6 +608,35 @@ bool test_strassen(TImpl strassen, bool logEvents=false)
         }
     }
     return ok;
+}
+
+template<class TImpl>
+int harness_strassen(TImpl strassen)
+{
+    const unsigned N=1<<12;
+
+    uint32_t ram[N];
+
+    unsigned n=64;
+    free_region_t hFree=ram;
+
+    for(int i=0;i<N;i++){
+        ram[i]=i;
+    }
+
+    matrix_t a=alloc_matrix(hFree, n);
+    matrix_t b=alloc_matrix(hFree, n);
+    matrix_t got=alloc_matrix(hFree, n);
+    matrix_t ref=alloc_matrix(hFree, n);
+
+    strassen(got, a, b, hFree);
+
+    int res=0;
+    for(int i=0;i<N;i++){
+        res+=ram[i];
+    }
+
+    return res;
 }
 
 }; // hls_recurse

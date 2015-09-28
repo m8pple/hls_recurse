@@ -4,6 +4,8 @@
 #include "hls_recurse/state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+#include "hls_recurse/examples/sort.hpp"
+
 namespace hls_recurse
 {
 

@@ -22,9 +22,9 @@ bool test_sudoku_man(T sudoku, bool logEvents=false)
 }
 
 template<class T>
-int harness_sudoku_man(T sudoku, bool logEvents=false)
+int harness_sudoku_man(T sudoku)
 {
-    return harness_sudoku(sudoku, logEvents);
+    return harness_sudoku(sudoku);
 }
 
 }; // hls_recurse

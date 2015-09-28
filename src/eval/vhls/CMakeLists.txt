@@ -11,6 +11,7 @@ file(RELATIVE_PATH HLS_RECURSE_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CU
 
 add_custom_target(eval_vhls_synth)
 add_custom_target(eval_vhls_impl)
+add_custom_target(eval_vhls_sim)
 add_custom_target(eval_vhls)
 
 function(add_vivado_hls_core DESIGN_NAME)
@@ -67,6 +68,9 @@ add_custom_target(eval_vhls_${DESIGN_NAME}_sim
     DEPENDS ${DESIGN_NAME}/simulate.log
 )
 
+add_dependencies(eval_vhls_sim
+    eval_vhls_${DESIGN_NAME}_sim
+)
 
 add_custom_command(OUTPUT ${DESIGN_NAME}/implement.tcl
     DEPENDS gen_implement_tcl.sh
@@ -140,7 +144,7 @@ add_vivado_hls_core(sudoku_man)
 add_vivado_hls_core(fft_indexed)
 add_vivado_hls_core(fft_indexed_man)
 
-add_vivado_hls_core(tiled_mmm_indexed)
+#add_vivado_hls_core(tiled_mmm_indexed)
 
 add_vivado_hls_core(strassen_indexed_v2)
 add_vivado_hls_core(strassen_indexed_v2_man)

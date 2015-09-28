@@ -17,7 +17,7 @@ HLS_INLINE_STEP uint32_t f2_ackerman_man(uint32_t m, uint32_t n)
 template<class T>
 bool test_ackerman_man(T ackerman, bool logEvents=false)
 {
-    return test_ackerman(ackerman);
+    return test_ackerman(ackerman, logEvents);
 }
 
 template<class T>

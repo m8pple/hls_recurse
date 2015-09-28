@@ -4,6 +4,8 @@
 #include "hls_recurse/state_machine_self_recursion.hpp"
 #include <stdint.h>
 
+#include "hls_recurse/examples/sum.hpp"
+
 namespace hls_recurse
 {
 
@@ -23,21 +25,21 @@ void r_sum_indexed(uint32_t n, int32_t *array)
 void man_sum_indexed(uint32_t n, int32_t *f)
 {
     const unsigned DEPTH=512;
-    
+
     int sp=0;
     int stack_n[DEPTH];
     int32_t stack_index[DEPTH];
     int stack_state[DEPTH];
-    
+
     stack_n[0]=n;
     stack_index[0]=0;
     stack_state[0]=0;
-    
+
     while(1){
         n=stack_n[sp];
         int index=stack_index[sp];
         int state=stack_state[sp];
-        
+
         if(state==0){
             if(n<=1){
                 if(sp==0){
@@ -183,6 +185,12 @@ bool test_sum_indexed(T sum_indexed, bool logEvents=false)
     }
 
     return ok;
+}
+
+template<class T>
+bool harness_sum_indexed(T sum)
+{
+    return harness_sum(sum);
 }
 
 }; // namespace hls_recurse

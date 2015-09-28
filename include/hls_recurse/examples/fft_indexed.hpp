@@ -11,7 +11,7 @@ namespace hls_recurse
 // Does not exist
 void f_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut);
 
-    
+
 void f2_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
 {
     const complex_t wn_table[16]={
@@ -101,9 +101,9 @@ void man_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
     int sOut=1;
     int bIn=0;
     int bOut=0;
-    
+
     const unsigned DEPTH=512;
-    
+
     int sp=0;
     int stack_n[DEPTH];
     complex_t stack_wn[DEPTH];
@@ -112,7 +112,7 @@ void man_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
     int stack_bOut[DEPTH];
     int stack_sOut[DEPTH];
     int stack_state[DEPTH];
-    
+
     stack_n[0]=n;
     stack_wn[0]=wn;
     stack_bIn[0]=bIn;
@@ -120,7 +120,7 @@ void man_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
     stack_bOut[0]=bOut;
     stack_sOut[0]=sOut;
     stack_state[0]=0;
-    
+
     while(1){
         n=stack_n[sp];
         wn=stack_wn[sp];
@@ -129,12 +129,12 @@ void man_fft_indexed(int log2n, const complex_t *pIn, complex_t *pOut)
         bOut=stack_bOut[sp];
         sOut=stack_sOut[sp];
         int state=stack_state[sp];
-        
+
         /*for(int i=0;i<sp;i++){
             printf("  ");
         }
         printf("n=%5d, ", n);*/
-        
+
         if(state==0){
             if( n<=2 ){
                 //printf("Leaf\n");
@@ -244,6 +244,20 @@ bool test_fft_indexed(T fft_indexed, bool logEvents=false)
     }
 
     return true;
+}
+
+template<class T>
+bool harness_fft_indexed(T fft)
+{
+    complex_t in[512], out[512];
+
+    for(int i=0; i<512; i++){
+      in[i]=complex_t::from_int(i,0);
+    }
+
+    fft(9, &in[0], &out[0]);
+
+    return out[0].re_int();
 }
 
 }; // hls_recurse
