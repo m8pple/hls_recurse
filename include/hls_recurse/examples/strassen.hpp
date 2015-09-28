@@ -157,6 +157,204 @@ void r_strassen(matrix_t &dst, const matrix_t &a, const matrix_t &b, free_region
 }
 
 
+void man_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_region_t _hFree)
+{
+    const unsigned DEPTH=512;
+    
+    //printf("strassen(%d)\n", _dst.n);
+    
+    int sp=0;
+    int stack_n[DEPTH];
+    matrix_t stack_dst[DEPTH];
+    matrix_t stack_a[DEPTH];
+    matrix_t stack_b[DEPTH];
+    free_region_t stack_hFree[DEPTH];
+    matrix_t stack_tmp1[DEPTH];
+    matrix_t stack_tmp2[DEPTH];
+    matrix_t stack_M1[DEPTH];
+    matrix_t stack_M2[DEPTH];
+    matrix_t stack_M3[DEPTH];
+    matrix_t stack_M4[DEPTH];
+    matrix_t stack_M5[DEPTH];
+    matrix_t stack_M6[DEPTH];
+    matrix_t stack_M7[DEPTH];
+    int stack_state[DEPTH];
+    
+    stack_dst[0]=_dst;
+    stack_a[0]=_a;
+    stack_b[0]=_b;
+    stack_hFree[0]=_hFree;
+    stack_state[0]=0;
+    
+    while(1){
+        int n=stack_n[sp];
+        matrix_t dst=stack_dst[sp];
+        matrix_t a=stack_a[sp];
+        matrix_t b=stack_b[sp];
+        free_region_t hFree=stack_hFree[sp];
+        matrix_t tmp1=stack_tmp1[sp];
+        matrix_t tmp2=stack_tmp2[sp];
+        matrix_t M1=stack_M1[sp];
+        matrix_t M2=stack_M2[sp];
+        matrix_t M3=stack_M3[sp];
+        matrix_t M4=stack_M4[sp];
+        matrix_t M5=stack_M5[sp];
+        matrix_t M6=stack_M6[sp];
+        matrix_t M7=stack_M7[sp];
+        int state=stack_state[sp];
+        
+        /*for(int i=0;i<sp;i++){
+            printf("  ");
+        }*/
+        
+        if(state==0){
+            n=dst.n;
+            stack_n[sp]=n;
+            
+            //printf("state0, n=%d", n);
+            
+            assert(sp<=8);
+            
+            
+            if(n<=16){
+                //printf(", leaf\n");
+                mul_matrix(dst,a,b);
+                //return;
+                if(sp==0){
+                    break;
+                }else{
+                    sp--;
+                    continue;
+                }
+            }
+            
+            //printf(", branch\n");
+
+            n=n/2; // Size of quads
+            stack_n[sp]=n;
+
+            tmp1=alloc_matrix(hFree, n);
+            stack_tmp1[sp]=tmp1;
+            stack_hFree[sp]=hFree;
+            tmp2=alloc_matrix(hFree, n);
+            stack_tmp2[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+
+            M1=alloc_matrix(hFree, n);
+            stack_M1[sp]=M1;
+            stack_hFree[sp]=hFree;
+            add_matrix(tmp1,quad(a,0,0),quad(a,1,1));
+            add_matrix(tmp2,quad(b,0,0),quad(b,1,1));
+            // call r_strassen(M1,tmp1,tmp2, hFree);
+            stack_state[sp]=1;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M1;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+        }else if(state==1){
+            //printf(", state1\n");
+            M2=alloc_matrix(hFree, n);
+            stack_M2[sp]=M2;
+            stack_hFree[sp]=hFree;
+            add_matrix(tmp1,quad(a,1,0),quad(a,1,1));
+            // call r_strassen(M2,tmp1,quad(b,0,0), hFree);
+            stack_state[sp]=2;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M2;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=quad(b,0,0);
+            stack_hFree[sp]=hFree;
+        }else if(state==2){
+            //printf(", state2\n");
+            M3=alloc_matrix(hFree, n);
+            stack_M3[sp]=M3;
+            stack_hFree[sp]=hFree;
+            sub_matrix(tmp1,quad(b,0,1),quad(b,1,1));
+            // call r_strassen(M3,quad(a,0,0),tmp1, hFree);
+            stack_state[sp]=3;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M3;
+            stack_a[sp]=quad(a,0,0);
+            stack_b[sp]=tmp1;
+            stack_hFree[sp]=hFree;
+        }else if(state==3){
+            //printf(", state3\n");
+            M4=alloc_matrix(hFree, n);
+            stack_hFree[sp]=hFree;
+            stack_M4[sp]=M4;
+            sub_matrix(tmp1,quad(b,1,0),quad(b,0,0));
+            // call r_strassen(M4,quad(a,1,1),tmp1, hFree);
+            stack_state[sp]=4;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M4;
+            stack_a[sp]=quad(a,1,1);
+            stack_b[sp]=tmp1;
+            stack_hFree[sp]=hFree;
+        }else if(state==4){
+            //printf(", state4\n");
+            M5=alloc_matrix(hFree, n);
+            stack_M5[sp]=M5;
+            stack_hFree[sp]=hFree;
+            add_matrix(tmp1,quad(a,0,0),quad(a,0,1));
+            // call r_strassen(M5,tmp1,quad(b,1,1), hFree);
+            stack_state[sp]=5;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M5;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=quad(b,1,1);
+            stack_hFree[sp]=hFree;
+        }else if(state==5){
+            //printf(", state5\n");
+            M6=alloc_matrix(hFree, n);
+            stack_M6[sp]=M6;
+            stack_hFree[sp]=hFree;
+            sub_matrix(tmp1,quad(a,1,0),quad(a,0,0));
+            add_matrix(tmp2,quad(b,0,0),quad(b,0,1));
+            // call r_strassen(M6,tmp1,tmp2, hFree);
+            stack_state[sp]=6;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M6;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+        }else if(state==6){
+            //printf(", state6\n");
+            M7=alloc_matrix(hFree, n);
+            stack_M7[sp]=M7;
+            stack_hFree[sp]=hFree;
+            sub_matrix(tmp1,quad(a,0,1),quad(a,1,1));
+            add_matrix(tmp2,quad(b,1,0),quad(b,1,1));
+            // call r_strassen(M7,tmp1,tmp2, hFree);
+            stack_state[sp]=7;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M7;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+        }else{
+            //printf(", state7\n");
+            add_sub_add_matrix(quad(dst,0,0), M1, M4, M5, M7);
+            add_matrix(quad(dst,0,1), M3, M5);
+            add_matrix(quad(dst,1,0), M2, M4);
+            add_sub_add_matrix(quad(dst,1,1), M1,M3,M2,M6);
+            if(sp==0){
+                break;
+            }else{
+                sp--;
+            }
+        }
+    }
+}
+
+
 class Strassen
     : public Function<Strassen, void,
             matrix_t, matrix_t, matrix_t, free_region_t,

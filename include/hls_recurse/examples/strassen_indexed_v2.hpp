@@ -101,8 +101,8 @@ HLS_INLINE_STEP unsigned ipmatrix_base(ipmatrix_t a)
 
 HLS_INLINE_STEP void ipmatrix_set(uint32_t *p, const ipmatrix_t &m, unsigned r, unsigned c, uint32_t val)
 {
-    assert(r < (1<<ipmatrix_log2n(m)));
-    assert(c < (1<<ipmatrix_log2n(m)));
+    assert(r < (1u<<ipmatrix_log2n(m)));
+    assert(c < (1u<<ipmatrix_log2n(m)));
     p[ipmatrix_base(m)+(r<<ipmatrix_log2stride(m))+c]=val;
 }
 
@@ -129,8 +129,8 @@ HLS_INLINE_STEP void add_ipmatrix(uint32_t * p, const ipmatrix_t &dst, const ipm
     );*/
 
     unsigned n=1<<ipmatrix_log2n(dst);
-    for(int r=0; r<n; r++){
-        for(int c=0; c<n; c++){
+    for(unsigned r=0; r<n; r++){
+        for(unsigned c=0; c<n; c++){
             p[ipmatrix_base(dst) + (r<<ipmatrix_log2stride(dst))+c] = p[ipmatrix_base(a) + (r<<ipmatrix_log2stride(a))+c] + p[ipmatrix_base(b) + (r<<ipmatrix_log2stride(b))+c];
             //set(p, dst, r, c, get(p, a, r, c) + get(p, b, r, c));
         }
@@ -140,8 +140,8 @@ HLS_INLINE_STEP void add_ipmatrix(uint32_t * p, const ipmatrix_t &dst, const ipm
 HLS_INLINE_STEP void sub_ipmatrix(uint32_t *p, const ipmatrix_t &dst, const ipmatrix_t &a, const ipmatrix_t &b)
 {
     unsigned n=1<<(ipmatrix_log2n(dst));
-    for(int r=0; r<n; r++){
-        for(int c=0; c<n; c++){
+    for(unsigned r=0; r<n; r++){
+        for(unsigned c=0; c<n; c++){
             p[ipmatrix_base(dst) + (r<<ipmatrix_log2stride(dst))+c] = p[ipmatrix_base(a) + (r<<ipmatrix_log2stride(a))+c] - p[ipmatrix_base(b) + (r<<ipmatrix_log2stride(b))+c];
         }
     }
@@ -150,8 +150,8 @@ HLS_INLINE_STEP void sub_ipmatrix(uint32_t *p, const ipmatrix_t &dst, const ipma
 HLS_INLINE_STEP void add_sub_add_ipmatrix(uint32_t *p, const ipmatrix_t &dst, const ipmatrix_t &a, const ipmatrix_t &b, const ipmatrix_t &c, const ipmatrix_t &d)
 {
     unsigned n=1<<ipmatrix_log2n(dst);
-    for(int r=0; r<n; r++){
-        for(int ci=0; ci<n; ci++){
+    for(unsigned r=0; r<n; r++){
+        for(unsigned ci=0; ci<n; ci++){
             p[ipmatrix_base(dst) + (r<<ipmatrix_log2stride(dst))+ci] = p[ipmatrix_base(a) + (r<<ipmatrix_log2stride(a))+ci]
                                       + p[ipmatrix_base(b)+(r<<ipmatrix_log2stride(b))+ci]
                                       - p[ipmatrix_base(c)+(r<<ipmatrix_log2stride(c))+ci]
@@ -165,10 +165,10 @@ HLS_INLINE_STEP void add_sub_add_ipmatrix(uint32_t *p, const ipmatrix_t &dst, co
 HLS_INLINE_STEP void mul_ipmatrix(uint32_t *p, const ipmatrix_t &dst, const ipmatrix_t &a, const ipmatrix_t &b)
 {
     unsigned n=1<<ipmatrix_log2n(dst);
-    for(int r=0; r<n; r++){
-        for(int c=0; c<n; c++){
+    for(unsigned r=0; r<n; r++){
+        for(unsigned c=0; c<n; c++){
             uint32_t acc=0;
-            for(int i=0; i<n; i++){
+            for(unsigned i=0; i<n; i++){
                 //uint32_t va=p[ipmatrix_base(a)+(r<<ipmatrix_log2stride(a))+i];
                 //acc += va * p[ipmatrix_base(b) + (i<<ipmatrix_log2stride(b))+c];
                 acc += ipmatrix_get(p,a,r,i) * ipmatrix_get(p,b,i,c);
@@ -246,6 +246,204 @@ void r_strassen_indexed_v2(uint32_t *p, ipmatrix_t &dst, const ipmatrix_t &a, co
     add_ipmatrix(p, ipmatrix_quad(dst,1,0), M2, M4);
     add_sub_add_ipmatrix(p, ipmatrix_quad(dst,1,1), M1,M3,M2,M6);
 }
+
+void man_strassen_indexed_v2(uint32_t *p, ipmatrix_t &_dst, const ipmatrix_t &_a, const ipmatrix_t &_b, ipfree_region_t _hFree)
+{
+    const unsigned DEPTH=512;
+    
+    //printf("strassen(%d)\n", _dst.n);
+    
+    int sp=0;
+    int stack_log2n[DEPTH];
+    ipmatrix_t stack_dst[DEPTH];
+    ipmatrix_t stack_a[DEPTH];
+    ipmatrix_t stack_b[DEPTH];
+    ipfree_region_t stack_hFree[DEPTH];
+    ipmatrix_t stack_tmp1[DEPTH];
+    ipmatrix_t stack_tmp2[DEPTH];
+    ipmatrix_t stack_M1[DEPTH];
+    ipmatrix_t stack_M2[DEPTH];
+    ipmatrix_t stack_M3[DEPTH];
+    ipmatrix_t stack_M4[DEPTH];
+    ipmatrix_t stack_M5[DEPTH];
+    ipmatrix_t stack_M6[DEPTH];
+    ipmatrix_t stack_M7[DEPTH];
+    int stack_state[DEPTH];
+    
+    stack_dst[0]=_dst;
+    stack_a[0]=_a;
+    stack_b[0]=_b;
+    stack_hFree[0]=_hFree;
+    stack_state[0]=0;
+    
+    while(1){
+        int log2n=stack_log2n[sp];
+        ipmatrix_t dst=stack_dst[sp];
+        ipmatrix_t a=stack_a[sp];
+        ipmatrix_t b=stack_b[sp];
+        ipfree_region_t hFree=stack_hFree[sp];
+        ipmatrix_t tmp1=stack_tmp1[sp];
+        ipmatrix_t tmp2=stack_tmp2[sp];
+        ipmatrix_t M1=stack_M1[sp];
+        ipmatrix_t M2=stack_M2[sp];
+        ipmatrix_t M3=stack_M3[sp];
+        ipmatrix_t M4=stack_M4[sp];
+        ipmatrix_t M5=stack_M5[sp];
+        ipmatrix_t M6=stack_M6[sp];
+        ipmatrix_t M7=stack_M7[sp];
+        int state=stack_state[sp];
+        
+        /*for(int i=0;i<sp;i++){
+            printf("  ");
+        }*/
+        
+        if(state==0){
+            log2n=ipmatrix_log2n(a);
+            stack_log2n[sp]=log2n;
+            
+            //printf("state0, n=%d", n);
+            
+            assert(sp<=8);
+            
+            
+            if(log2n<=4){
+                //printf(", leaf\n");
+                mul_ipmatrix(p, dst,a,b);
+                //return;
+                if(sp==0){
+                    break;
+                }else{
+                    sp--;
+                    continue;
+                }
+            }
+            
+            //printf(", branch\n");
+
+            log2n=log2n-1; // Size of ipmatrix_quads
+            stack_log2n[sp]=log2n;
+
+            tmp1=alloc_ipmatrix(hFree, log2n);
+            stack_tmp1[sp]=tmp1;
+            stack_hFree[sp]=hFree;
+            tmp2=alloc_ipmatrix(hFree, log2n);
+            stack_tmp2[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+
+            M1=alloc_ipmatrix(hFree, log2n);
+            stack_M1[sp]=M1;
+            stack_hFree[sp]=hFree;
+            add_ipmatrix(p, tmp1,ipmatrix_quad(a,0,0),ipmatrix_quad(a,1,1));
+            add_ipmatrix(p, tmp2,ipmatrix_quad(b,0,0),ipmatrix_quad(b,1,1));
+            // call r_strassen(M1,tmp1,tmp2, hFree);
+            stack_state[sp]=1;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M1;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+        }else if(state==1){
+            //printf(", state1\n");
+            M2=alloc_ipmatrix(hFree, log2n);
+            stack_M2[sp]=M2;
+            stack_hFree[sp]=hFree;
+            add_ipmatrix(p, tmp1,ipmatrix_quad(a,1,0),ipmatrix_quad(a,1,1));
+            // call r_strassen(M2,tmp1,ipmatrix_quad(b,0,0), hFree);
+            stack_state[sp]=2;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M2;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=ipmatrix_quad(b,0,0);
+            stack_hFree[sp]=hFree;
+        }else if(state==2){
+            //printf(", state2\n");
+            M3=alloc_ipmatrix(hFree, log2n);
+            stack_M3[sp]=M3;
+            stack_hFree[sp]=hFree;
+            sub_ipmatrix(p, tmp1,ipmatrix_quad(b,0,1),ipmatrix_quad(b,1,1));
+            // call r_strassen(M3,ipmatrix_quad(a,0,0),tmp1, hFree);
+            stack_state[sp]=3;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M3;
+            stack_a[sp]=ipmatrix_quad(a,0,0);
+            stack_b[sp]=tmp1;
+            stack_hFree[sp]=hFree;
+        }else if(state==3){
+            //printf(", state3\n");
+            M4=alloc_ipmatrix(hFree, log2n);
+            stack_hFree[sp]=hFree;
+            stack_M4[sp]=M4;
+            sub_ipmatrix(p, tmp1,ipmatrix_quad(b,1,0),ipmatrix_quad(b,0,0));
+            // call r_strassen(M4,ipmatrix_quad(a,1,1),tmp1, hFree);
+            stack_state[sp]=4;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M4;
+            stack_a[sp]=ipmatrix_quad(a,1,1);
+            stack_b[sp]=tmp1;
+            stack_hFree[sp]=hFree;
+        }else if(state==4){
+            //printf(", state4\n");
+            M5=alloc_ipmatrix(hFree, log2n);
+            stack_M5[sp]=M5;
+            stack_hFree[sp]=hFree;
+            add_ipmatrix(p, tmp1,ipmatrix_quad(a,0,0),ipmatrix_quad(a,0,1));
+            // call r_strassen(M5,tmp1,ipmatrix_quad(b,1,1), hFree);
+            stack_state[sp]=5;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M5;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=ipmatrix_quad(b,1,1);
+            stack_hFree[sp]=hFree;
+        }else if(state==5){
+            //printf(", state5\n");
+            M6=alloc_ipmatrix(hFree, log2n);
+            stack_M6[sp]=M6;
+            stack_hFree[sp]=hFree;
+            sub_ipmatrix(p, tmp1,ipmatrix_quad(a,1,0),ipmatrix_quad(a,0,0));
+            add_ipmatrix(p, tmp2,ipmatrix_quad(b,0,0),ipmatrix_quad(b,0,1));
+            // call r_strassen(M6,tmp1,tmp2, hFree);
+            stack_state[sp]=6;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M6;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+        }else if(state==6){
+            //printf(", state6\n");
+            M7=alloc_ipmatrix(hFree, log2n);
+            stack_M7[sp]=M7;
+            stack_hFree[sp]=hFree;
+            sub_ipmatrix(p, tmp1,ipmatrix_quad(a,0,1),ipmatrix_quad(a,1,1));
+            add_ipmatrix(p, tmp2,ipmatrix_quad(b,1,0),ipmatrix_quad(b,1,1));
+            // call r_strassen(M7,tmp1,tmp2, hFree);
+            stack_state[sp]=7;
+            sp++;
+            stack_state[sp]=0;
+            stack_dst[sp]=M7;
+            stack_a[sp]=tmp1;
+            stack_b[sp]=tmp2;
+            stack_hFree[sp]=hFree;
+        }else{
+            //printf(", state7\n");
+            add_sub_add_ipmatrix(p, ipmatrix_quad(dst,0,0), M1, M4, M5, M7);
+            add_ipmatrix(p, ipmatrix_quad(dst,0,1), M3, M5);
+            add_ipmatrix(p, ipmatrix_quad(dst,1,0), M2, M4);
+            add_sub_add_ipmatrix(p, ipmatrix_quad(dst,1,1), M1,M3,M2,M6);
+            if(sp==0){
+                break;
+            }else{
+                sp--;
+            }
+        }
+    }
+}
+
 
 
 void f2_strassen_indexed_v2(uint32_t *p, ipmatrix_t dst, ipmatrix_t a, ipmatrix_t b, ipfree_region_t hFree)
