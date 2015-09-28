@@ -148,3 +148,4 @@ add_vivado_hls_core(strassen_indexed_v2_man)
 add_vivado_hls_core(naive_mmm_indexed)
 
 add_vivado_hls_core(miser_indexed)
+add_vivado_hls_core(miser_indexed_man)

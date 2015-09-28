@@ -228,6 +228,252 @@ pfloat_pair_t r_miser_indexed(float *p, unsigned regn, unsigned long npts, uint3
 };
 
 
+pfloat_pair_t man_miser_indexed(float *p, unsigned _regn, unsigned long _npts, uint32_t &seed, unsigned _region)
+{
+    /*
+    Monte Carlo samples a user-supplied ndim-dimensional function func in a rectangular volume
+    specified by regn[1..2*ndim], a vector consisting of ndim “lower-left” coordinates of the
+    region followed by ndim “upper-right” coordinates. The function is sampled a total of npts
+    times, at locations determined by the method of recursive stratified sampling. The mean value
+    of the function in the region is returned as ave; an estimate of the statistical uncertainty of ave
+    (square of standard deviation) is returned as var. The input parameter dith should normally
+    be set to zero, but can be set to (e.g.) 0.1 if func’s active region falls on the boundary of a
+    power-of-two subdivision of region.
+    */
+
+    const int TDim=4;
+    const float PFAC=0.1f;
+    const int MNPT=15;
+    const int MNBS=60;
+    const float TINY=1.0e-30f;
+    const float BIG=1.0e30f;
+    //Here PFAC is the fraction of remaining function evaluations used at each stage to explore the
+    //variance of func. At least MNPT function evaluations are performed in any terminal subregion;
+    //a subregion is further bisected only if at least MNBS function evaluations are available. We take
+    //MNBS = 4*MNPT.
+
+    auto rngu=[&]() -> uint32_t{
+        seed=seed*1664525+1013904223;
+        return seed;
+    };
+
+    auto rngf=[&]() -> float{
+        return rngu() * 0.00000000023283064365386962890625f;
+    };
+    
+    const int DEPTH=512;
+    
+    // All int to keep legup happy in conversions
+    int stack_regn[DEPTH];
+    int stack_npts[DEPTH];
+    int stack_region[DEPTH];
+    pfloat_pair_t stack_resl[DEPTH];
+    pfloat_pair_t stack_resr[DEPTH];
+    int stack_nptl[DEPTH];
+    int stack_nptr[DEPTH];
+    int stack_regn_left[DEPTH];
+    int stack_regn_right[DEPTH];
+    int stack_state[DEPTH];
+    int sp=0;
+    pfloat_pair_t retval;
+    
+    stack_regn[0]=_regn;
+    stack_npts[0]=_npts;
+    stack_region[0]=_region;
+    stack_state[0]=0;    
+    
+    while(1){
+        int regn=stack_regn[sp];
+        int npts=stack_npts[sp];
+        int region=stack_region[sp];
+        pfloat_pair_t resl=stack_resl[sp];
+        pfloat_pair_t resr=stack_resr[sp];
+        int nptl=stack_nptl[sp];
+        int nptr=stack_nptr[sp];
+        int regn_left=stack_regn_left[sp];
+        int regn_right=stack_regn_right[sp];
+        
+        int state=stack_state[sp];
+        
+        if(state==0){
+            if (npts < MNBS) { // Too few points to bisect; do straight
+                float summ=0.0f, summ2=0.0f; //Monte Carlo.
+                for (int n=0;n<npts;n++) {
+                    float acc=0;
+                    for(int i=0;i<TDim;i++){
+                        float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
+                        acc += x*x;
+                    }
+
+                    float fval=expf(-acc*0.5f);
+
+                    summ += fval;
+                    summ2 += fval * fval;
+                }
+                retval=  pfloat_pair_create(
+                    summ/npts,
+                    max(TINY,(summ2-summ*summ/npts)/(npts*npts))
+                );
+                if(sp==0){
+                    break;
+                }else{
+                    sp--;
+                }
+                continue;
+            }else{ //Do the preliminary (uniform) sampling.
+                int npre=max((int)(npts*PFAC),(int)MNPT);
+                //fprintf(stderr, "    depth=%d, npts=%u\n", depth, npts);
+
+                auto alloci=[&](int n) -> int
+                {
+                    int tmp=region;
+                    region+=n;
+                    return tmp;
+                };
+
+                auto alloc=[&](int n) -> float *
+                {
+                    return p+alloci(n);
+                };
+
+                auto pMid=[&](int j){ return (p[regn+j]+p[regn+j+TDim])*0.5f; };
+
+                float *fmaxl=alloc(TDim);
+                float *fmaxr=alloc(TDim);
+                float *fminl=alloc(TDim);
+                float *fminr=alloc(TDim);
+
+                for (int j=0;j<TDim;j++) { // Initialize the left and right bounds for
+                    fminl[j]=fminr[j]=BIG;
+                    fmaxl[j]=fmaxr[j] = -BIG;
+                }
+
+                int jb=0;
+                float siglb, sigrb;
+
+                float summ=0;
+                for (int n=0;n<npre;n++) { // Loop over the points in the sample.
+                    // VHLS-HACK : Inlined target function to get it to compile
+                    // VHLS-HACK : avoided local array for pt
+                    // VHLS-HACK : shift register through shift to avoid local array
+
+                    uint32_t splits=0; // Shift-register of whether left or right
+
+                    float acc=0;
+                    for(int i=0;i<TDim;i++){
+                        float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
+                        splits = splits + (x <= pMid(i) ? (1<<i) : 0 );
+
+                        acc += x*x;
+                    }
+
+                    float fval=expf(-acc/2);
+
+                    summ+=fval;
+
+                    for (int j=0;j<TDim;j++) { // Find the left and right bounds for each
+                        if (splits&(1<<j)) { // dimension.
+                            fminl[j]=min(fminl[j],fval);
+                            fmaxl[j]=max(fmaxl[j],fval);
+                        }
+                        else {
+                            fminr[j]=min(fminr[j],fval);
+                            fmaxr[j]=max(fmaxr[j],fval);
+                        }
+                    }
+                }
+
+                float sumb=BIG; //Choose which dimension jb to bisect.
+                siglb=sigrb=1.0;
+                for (int j=0;j<TDim;j++) {
+                    if (fmaxl[j] > fminl[j] && fmaxr[j] > fminr[j]) {
+
+                        //sigl=max(TINY,powf(fmaxl[j]-fminl[j],1.5f));
+                        float sigl=max(TINY,x_to_one_half(fmaxl[j]-fminl[j]));
+                        //sigr=max(TINY,powf(fmaxr[j]-fminr[j],1.5f));
+                        float sigr=max(TINY,x_to_one_half(fmaxr[j]-fminr[j]));
+                        float sum=sigl+sigr; //Equation (7.8.24), see text.
+                        if (sum<=sumb)
+                        {
+                            sumb=sum;
+                            jb=j;
+                            siglb=sigl;
+                            sigrb=sigr;
+                        }
+                    }
+                }
+
+                if (!jb){
+                    jb=rngu()%TDim;
+                }
+
+                nptl=(int)(MNPT+(npts-npre-2*MNPT)*siglb
+                    /(siglb+sigrb)); //Equation (7.8.23).
+                stack_nptl[sp]=nptl;
+
+                nptr=npts-npre-nptl;
+                stack_nptr[sp]=nptr;
+
+                assert(nptl < 1000000);
+                assert(nptr < 1000000);
+
+                // VHLS-HACK: combining region creation to avoid extra lambda step
+                regn_left=alloci(2*TDim);
+                stack_regn_left[sp]=regn_left;
+                regn_right=alloci(2*TDim);
+                stack_regn_right[sp]=regn_right;
+
+                for(int j=0;j<TDim;j++) { // regions.
+                    p[regn_left+j]=p[regn+j];
+                    p[regn_left+TDim+j]=p[regn+TDim+j];
+                    p[regn_right+j]=p[regn+j];
+                    p[regn_right+TDim+j]=p[regn+TDim+j];
+                }
+                p[regn_left+TDim+jb]=pMid(jb);  // Set upper-bound on first one
+                p[regn_right+jb]=pMid(jb); // Set lower-bound on second one
+
+                //call pfloat_pair_t resl=r_miser_indexed(p, regn_left, nptl, seed, region);
+                stack_state[sp]=1;
+                sp++;
+                stack_state[sp]=0;
+                stack_regn[sp]=regn_left;
+                stack_npts[sp]=nptl;
+                stack_region[sp]=region;
+            }
+        }else if(state==1){
+            // finish pfloat_pair_t resl=r_miser_indexed(p, regn_left, nptl, seed, region);
+            resl=retval;
+            stack_resl[sp]=resl;
+            
+            // call pfloat_pair_t resr=r_miser_indexed(p, regn_right,nptr, seed, region);
+            stack_state[sp]=2;
+            sp++;
+            stack_state[sp]=0;
+            stack_regn[sp]=regn_right;
+            stack_npts[sp]=nptr;
+            stack_region[sp]=region;
+        }else if(state==2){
+            // finish pfloat_pair_t resr=r_miser_indexed(p, regn_right,nptr, seed, region);
+            
+            resr=retval;
+            stack_resr[sp]=resr;
+            
+            retval=pfloat_pair_create(
+                0.5*pfloat_pair_first(resl)+0.5*pfloat_pair_first(resr),
+                0.25*pfloat_pair_second(resl)+0.25*pfloat_pair_second(resr)
+            );
+            if(sp==0){
+                break;
+            }else{
+                sp--;
+            }
+        }
+    }
+    
+    return retval;
+};
+
+
 pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed, uint32_t region)
 {
     /*
@@ -278,9 +524,9 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
             Sequence(
                 [&](){
                     summ=0.0f, summ2=0.0f; //Monte Carlo.
-                    for (unsigned n=0;n<npts;n++) {
+                    for (int n=0;n<npts;n++) {
                         float acc=0.0f;
-                        for(unsigned i=0;i<TDim;i++){
+                        for(int i=0;i<TDim;i++){
                             float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
                             acc += x*x;
                         }
@@ -304,19 +550,19 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
                 int npre=max((int)(npts*PFAC),(int)MNPT);
                 //fprintf(stderr, "    depth=%d, npts=%u\n", depth, npts);
 
-                auto alloci=[&](unsigned n) -> unsigned
+                auto alloci=[&](int n) -> int
                 {
-                    unsigned tmp=region;
+                    int tmp=region;
                     region+=n;
                     return tmp;
                 };
 
-                auto alloc=[&](unsigned n) -> float *
+                auto alloc=[&](int n) -> float *
                 {
                     return p+alloci(n);
                 };
 
-                auto pMid=[&](unsigned j){ return (p[regn+j]+p[regn+j+TDim])/2; };
+                auto pMid=[&](int j){ return (p[regn+j]+p[regn+j+TDim])/2; };
 
 
                 float *fmaxl=alloc(TDim);
@@ -324,7 +570,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
                 float *fminl=alloc(TDim);
                 float *fminr=alloc(TDim);
 
-                for (unsigned j=0;j<TDim;j++) { // Initialize the left and right bounds for
+                for (int j=0;j<TDim;j++) { // Initialize the left and right bounds for
                     fminl[j]=fminr[j]=BIG;
                     fmaxl[j]=fmaxr[j] = -BIG;
                 }
@@ -341,7 +587,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
                     uint32_t splits=0; // Shift-register of whether left or right
 
                     float acc=0;
-                    for(unsigned i=0;i<TDim;i++){
+                    for(int i=0;i<TDim;i++){
                         float x = p[i+regn] + rngf() * (p[TDim+i+regn]-p[i+regn]);
                         splits = splits + (x <= pMid(i) ? (1<<i) : 0 );
 
@@ -352,7 +598,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
 
                     summ+=fval;
 
-                    for (unsigned j=0;j<TDim;j++) { // Find the left and right bounds for each
+                    for (int j=0;j<TDim;j++) { // Find the left and right bounds for each
                         if (splits&(1<<j)) { // dimension.
                             fminl[j]=min(fminl[j],fval);
                             fmaxl[j]=max(fmaxl[j],fval);
@@ -366,7 +612,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
 
                 float sumb=BIG; //Choose which dimension jb to bisect.
                 siglb=sigrb=1.0f;
-                for (unsigned j=0;j<TDim;j++) {
+                for (int j=0;j<TDim;j++) {
                     if (fmaxl[j] > fminl[j] && fmaxr[j] > fminr[j]) {
                         float sigl=max(TINY,x_to_one_half(fmaxl[j]-fminl[j]));
                         float sigr=max(TINY,x_to_one_half(fmaxr[j]-fminr[j]));
@@ -385,7 +631,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
                     jb=rngu()%TDim;
                 }
 
-                // LEGUP-HACK : avoid unsigned->float
+                // LEGUP-HACK : avoid int->float
                 nptl=(int)(MNPT+(npts-npre-2*MNPT)*siglb
                     /(siglb+sigrb)); //Equation (7.8.23).
 
@@ -395,7 +641,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
                 regn_left=alloci(2*TDim);
                 regn_right=alloci(2*TDim);
 
-                for(unsigned j=0;j<TDim;j++) { // regions.
+                for(int j=0;j<TDim;j++) { // regions.
                     p[regn_left+j]=p[regn+j];
                     p[regn_left+TDim+j]=p[regn+TDim+j];
                     p[regn_right+j]=p[regn+j];
@@ -426,7 +672,7 @@ pfloat_pair_t f2_miser_indexed(float *p, uint32_t regn, int npts, uint32_t &seed
 };
 
 template<class T>
-bool test_miser_indexed(T miser_indexed, bool logEvents=true)
+bool test_miser_indexed(T miser_indexed, bool logEvents=false)
 {
     bool ok=true;
 
@@ -461,7 +707,7 @@ bool test_miser_indexed(T miser_indexed, bool logEvents=true)
         //printf("ave = %g, std = %g\n", pfloat_pair_first(res), sqrtf(pfloat_pair_second(res)));
 
         if(npts >= 32768 ){
-            ok=ok && ( ((0.0780804-0.001) < pfloat_pair_first(res)) && ( pfloat_pair_second(res) < (0.0780804+0.001)));
+            ok=ok && ( ((0.0667715-0.001) < pfloat_pair_first(res)) && ( pfloat_pair_second(res) < (0.0667715+0.001)));
         }
     }
     return ok;
