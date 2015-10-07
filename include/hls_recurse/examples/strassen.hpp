@@ -518,7 +518,7 @@ void iter_strassen(matrix_t &_dst, const matrix_t &_a, const matrix_t &_b, free_
     mul_matrix(_dst, _a, _b);
 }
 
-uint32_t strassen_globalMem[1<<20];
+uint32_t strassen_globalMem[1<<21];
 
 template<class TImpl>
 bool test_strassen(TImpl strassen, bool logEvents=false)

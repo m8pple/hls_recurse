@@ -3,11 +3,15 @@ project (hls_recursion)
 
 set (CMAKE_CXX_STANDARD 11)
 
+IF(CMAKE_COMPILER_IS_GNUCC)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 # It is common to label loops in HLS code, but it isn't
 # a problem if we don't use them.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-label")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+
 
 include_directories( ../include )
 
@@ -15,6 +19,12 @@ include_directories( ../include )
 function(add_executable_test PREFIX NAME)
 add_executable(${NAME}_test ${NAME}_test.cpp)
 add_test(${PREFIX}_${NAME}_test ${EXECUTABLE_OUTPUT_PATH}/${NAME}_test)
+
+add_executable(${NAME}_short_cut_test ${NAME}_test.cpp)
+add_test(${PREFIX}_${NAME}_short_cut_test ${EXECUTABLE_OUTPUT_PATH}/${NAME}_short_cut_test)
+
+set_target_properties(${NAME}_short_cut_test PROPERTIES COMPILE_DEFINITIONS HLS_ENABLE_SHORT_CUT)
+
 endfunction(add_executable_test)
 
 enable_testing()

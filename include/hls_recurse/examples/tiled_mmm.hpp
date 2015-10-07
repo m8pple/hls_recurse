@@ -132,7 +132,7 @@ bool test_tiled_mmm(T tiled_mmm, bool logEvents=false)
     bool ok=true;
 
     const unsigned MN=128;
-    float a[512*512], b[512*512], got[512*512], ref[512*512];
+    float a[MN*MN], b[MN*MN], got[MN*MN], ref[MN*MN];
 
     for(int n=2;n<=MN;n*=2){
 

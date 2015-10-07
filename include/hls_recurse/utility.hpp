@@ -3,8 +3,22 @@
 
 #include <assert.h>
 
+#if defined(__SYNTHESIS__)
+#define HLS_IS_SYNTHESIS
+#elif defined( __linux__ ) || defined(__CYGWIN__)
+#define HLS_IS_POSIX
+#elif defined( _WIN32 )
+#define HLS_IS_WINDOWS
+#endif
+
+
 #if defined(__GNUC__) || defined(__clang__)
+#if (defined(HLS_IS_SYNTHESIS)||defined(NDEBUG))
 #define HLS_INLINE_STEP inline __attribute__((always_inline))
+#else
+#define HLS_INLINE_STEP inline
+#endif
+
 #define HLS_NO_RETURN __attribute__((noreturn))
 
 #else
@@ -12,8 +26,15 @@
 #define HLS_NO_RETURN
 #endif
 
-#ifndef __SYNTHESIS__
+#ifdef HLS_IS_POSIX
 #include <time.h>
+#include <stdio.h>
+#endif
+
+#ifdef HLS_IS_WINDOWS
+// Woo, 2015 and still trying to supress macros for min and max
+#define NOMINMAX
+#include <Windows.h>
 #endif
 
 #include <stdint.h>
@@ -34,7 +55,6 @@ HLS_INLINE_STEP HLS_NO_RETURN void logic_error_if_reachable()
     __builtin_unreachable();
 #else
     // Scream "UB!" at the compiler
-    int x=5/0;
     *(static_cast<int*>(0)) = 0;
 #endif
 }
@@ -43,12 +63,19 @@ HLS_INLINE_STEP HLS_NO_RETURN void logic_error_if_reachable()
 
 uint64_t time_now()
 {
-#ifdef __SYNTHESIS__
+#ifdef HLS_IS_SYNTHESIS
     return 0;
-#else
+#elif defined(HLS_IS_POSIX)
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
     return uint64_t(tp.tv_sec)*1000000000 + tp.tv_nsec;
+#elif defined(HLS_IS_WINDOWS)
+	LARGE_INTEGER time, freq;
+	QueryPerformanceCounter(&time);
+	QueryPerformanceFrequency(&freq);
+	return time.QuadPart/(double)freq.QuadPart;
+#else
+#error "No way of getting the time."
 #endif
 }
 

@@ -525,7 +525,7 @@ void f2_strassen_indexed_v2(uint32_t *p, ipmatrix_t dst, ipmatrix_t a, ipmatrix_
     );
 }
 
-uint32_t iglobalMem[1<<20];
+uint32_t iglobalMem[1<<21];
 
 template<class TImpl>
 bool test_strassen_indexed_v2(TImpl strassen_indexed_v2,bool logEvents=false)
