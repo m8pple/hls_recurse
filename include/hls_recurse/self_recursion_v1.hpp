@@ -25,13 +25,13 @@ struct CallStack
 
     return_holder<TRet> m_return;
 public:
-  CallStack(context_t *stack, TStateVars &...stateVars)
+  HLS_INLINE_STEP CallStack(context_t *stack, TStateVars &...stateVars)
     : m_stack(stack)
     , m_stackPtr(0)
     , m_state(stateVars...)
   {}
 
-  CallStack(context_t *stack, const hls_binding_tuple<TStateVars...> &stateVars)
+  HLS_INLINE_STEP CallStack(context_t *stack, const hls_binding_tuple<TStateVars...> &stateVars)
     : m_stack(stack)
     , m_stackPtr(0)
     , m_state(stateVars)

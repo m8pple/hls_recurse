@@ -14,6 +14,11 @@ add_custom_target(eval_vhls_impl)
 add_custom_target(eval_vhls_sim)
 add_custom_target(eval_vhls)
 
+add_custom_target(eval_vhls_short_cut_synth)
+add_custom_target(eval_vhls_short_cut_impl)
+add_custom_target(eval_vhls_short_cut_sim)
+add_custom_target(eval_vhls_short_cut)
+
 function(add_vivado_hls_core DESIGN_NAME)
 
 add_custom_command(OUTPUT ${DESIGN_NAME}/synthesise.tcl
@@ -122,6 +127,120 @@ add_custom_target(eval_vhls_${DESIGN_NAME}
 )
 
 add_dependencies(eval_vhls eval_vhls_${DESIGN_NAME})
+
+
+
+##############################################################
+
+add_custom_command(OUTPUT ${DESIGN_NAME}_short_cut/synthesise.tcl
+    DEPENDS gen_synthesise_tcl_short_cut.sh
+    COMMAND mkdir -p ${DESIGN_NAME}_short_cut/build/synth
+    COMMAND echo $$(pwd)
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_synthesise_tcl_short_cut.sh ${DESIGN_NAME} ${HLS_RECURSE_SOURCE_DIR} "" > ${DESIGN_NAME}_short_cut/synthesise.tcl
+    WORKING_DIRECTORY .
+)
+
+add_custom_command(OUTPUT ${DESIGN_NAME}_short_cut/build/synth/${DESIGN_NAME}_short_cut/sim/syn/vhdl/vhls_${DESIGN_NAME}.vhd
+    DEPENDS ${DESIGN_NAME}_short_cut/synthesise.tcl
+    WORKING_DIRECTORY ${DESIGN_NAME}_short_cut/build/synth
+    COMMAND ${VIVADO_HLS}/bin/vivado_hls  -f ../../synthesise.tcl
+)
+
+add_custom_command(
+    OUTPUT ${DESIGN_NAME}_short_cut/${DESIGN_NAME}_vhls.zip
+    DEPENDS ${DESIGN_NAME}_short_cut/build/synth/${DESIGN_NAME}_short_cut/sim/syn/vhdl/vhls_${DESIGN_NAME}.vhd
+    WORKING_DIRECTORY ${DESIGN_NAME}_short_cut/build/synth/${DESIGN_NAME}_short_cut/sim/syn/vhdl
+    COMMAND zip ../../../../../../${DESIGN_NAME}_vhls.zip *.*
+)
+
+add_custom_target(eval_vhls_${DESIGN_NAME}_short_cut_synth
+    DEPENDS ${DESIGN_NAME}_short_cut/synthesise.tcl
+    DEPENDS ${DESIGN_NAME}_short_cut/build/synth/${DESIGN_NAME}_short_cut/sim/syn/vhdl/vhls_${DESIGN_NAME}.vhd
+)
+
+add_dependencies(eval_vhls_short_cut_synth eval_vhls_${DESIGN_NAME}_short_cut_synth)
+
+
+add_custom_command(OUTPUT ${DESIGN_NAME}_short_cut/simulate.tcl
+    DEPENDS gen_simulate_tcl.sh
+    DEPENDS eval_vhls_${DESIGN_NAME}_short_cut_synth
+    COMMAND mkdir -p ${DESIGN_NAME}_short_cut/build/sim
+    COMMAND echo "Making simulate.tcl"
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_simulate_tcl.sh ${DESIGN_NAME} ${HLS_RECURSE_SOURCE_DIR} . > ${DESIGN_NAME}_short_cut/simulate.tcl
+    WORKING_DIRECTORY .
+)
+
+configure_file( ${DESIGN_NAME}/vhls_${DESIGN_NAME}_tb.vhd ${DESIGN_NAME}_short_cut/vhls_${DESIGN_NAME}_tb.vhd )
+
+add_custom_command(OUTPUT ${DESIGN_NAME}_short_cut/simulate.log
+    DEPENDS ${DESIGN_NAME}_short_cut/simulate.tcl
+    DEPENDS eval_vhls_${DESIGN_NAME}_short_cut_synth
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${DESIGN_NAME}_short_cut/vhls_${DESIGN_NAME}_tb.vhd
+    WORKING_DIRECTORY ${DESIGN_NAME}_short_cut/build/sim
+    COMMAND ls ../..
+    COMMAND ${VIVADO_ROOT}/bin/vivado -mode batch -source ../../simulate.tcl | tee ../../simulate.log
+)
+
+add_custom_target(eval_vhls_${DESIGN_NAME}_short_cut_sim
+    DEPENDS ${DESIGN_NAME}_short_cut/simulate.tcl
+    DEPENDS ${DESIGN_NAME}_short_cut/simulate.log
+)
+
+add_dependencies(eval_vhls_short_cut_sim
+    eval_vhls_${DESIGN_NAME}_short_cut_sim
+)
+
+add_custom_command(OUTPUT ${DESIGN_NAME}_short_cut/implement.tcl
+    DEPENDS gen_implement_tcl.sh
+    DEPENDS eval_vhls_${DESIGN_NAME}_short_cut_synth
+    WORKING_DIRECTORY .
+    COMMAND mkdir -p ${DESIGN_NAME}_short_cut/build/impl
+    COMMAND echo "Making implement.tcl"
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_implement_tcl.sh ${DESIGN_NAME} ${HLS_RECURSE_SOURCE_DIR} . > ${DESIGN_NAME}_short_cut/implement.tcl
+)
+
+add_custom_command(
+    OUTPUT ${DESIGN_NAME}_short_cut/implement.log
+    OUTPUT ${DESIGN_NAME}_short_cut/synth_utilisation.txt
+    OUTPUT ${DESIGN_NAME}_short_cut/opt_utilisation.txt
+    OUTPUT ${DESIGN_NAME}_short_cut/impl_utilisation.txt
+    OUTPUT ${DESIGN_NAME}_short_cut/impl_timing.txt
+    OUTPUT ${DESIGN_NAME}_short_cut/impl_checkpoint.dcp
+    DEPENDS ${DESIGN_NAME}_short_cut/implement.tcl
+    DEPENDS eval_vhls_${DESIGN_NAME}_short_cut_synth
+    WORKING_DIRECTORY ${DESIGN_NAME}_short_cut/build/impl
+    COMMAND ls ../..
+    COMMAND ${VIVADO_ROOT}/bin/vivado -mode batch -source ../../implement.tcl | tee ../../implement.log
+)
+
+add_custom_target(eval_vhls_${DESIGN_NAME}_short_cut_impl
+    DEPENDS ${DESIGN_NAME}_short_cut/implement.tcl
+    DEPENDS ${DESIGN_NAME}_short_cut/implement.log
+)
+
+add_dependencies(eval_vhls_short_cut_impl
+    eval_vhls_${DESIGN_NAME}_short_cut_impl
+)
+
+add_custom_command(
+    OUTPUT ${DESIGN_NAME}_short_cut/${DESIGN_NAME}_results.zip
+    DEPENDS ${DESIGN_NAME}_short_cut/${DESIGN_NAME}_vhls.zip
+    DEPENDS ${DESIGN_NAME}_short_cut/implement.log
+    DEPENDS ${DESIGN_NAME}_short_cut/synth_utilisation.txt
+    DEPENDS ${DESIGN_NAME}_short_cut/opt_utilisation.txt
+    DEPENDS ${DESIGN_NAME}_short_cut/impl_utilisation.txt
+    DEPENDS ${DESIGN_NAME}_short_cut/impl_timing.txt
+    DEPENDS ${DESIGN_NAME}_short_cut/impl_checkpoint.dcp
+    WORKING_DIRECTORY ${DESIGN_NAME}
+    COMMAND zip ${DESIGN_NAME}_results.zip *.txt *.log *.dcp *_vhls.zip
+)
+
+add_custom_target(eval_vhls_${DESIGN_NAME}_short_cut
+    DEPENDS ${DESIGN_NAME}_short_cut/${DESIGN_NAME}_results.zip
+)
+
+add_dependencies(eval_vhls_short_cut eval_vhls_${DESIGN_NAME}_short_cut)
+
 
 
 endfunction(add_vivado_hls_core)
